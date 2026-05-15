@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Explore Properties | House Rental Pro{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Explore Properties</h2>
+    <a class="btn btn-outline-secondary btn-sm" href="/properties">Reset Filters</a>
+</div>
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-4"><input class="form-control" name="location" value="{{ location }}" placeholder="Location"></div>
+    <div class="col-md-2"><input class="form-control" name="rooms" value="{{ rooms }}" type="number" min="1" placeholder="Rooms"></div>
+    <div class="col-md-3"><input class="form-control" name="max_price" value="{{ max_price }}" type="number" min="0" step="0.01" placeholder="Max price"></div>
+    <div class="col-md-3"><button class="btn btn-primary w-100" type="submit">Filter</button></div>
+</form>
+
+<div class="row g-3">
+    {% for p in properties %}
+    <div class="col-md-4">
+        <div class="card card-soft h-100 overflow-hidden">
+            {% set image = p.images[0].file_path if p.images else None %}
+            <img src="{{ image_src(image) }}" class="property-card-img" alt="Property image">
+            <div class="card-body">
+                <h5>{{ p.title }}</h5>
+                <p class="text-muted mb-1">{{ p.location }} | {{ p.number_of_rooms }} rooms</p>
+                <p class="fw-semibold mb-2">${{ "%.2f"|format(p.price) }}/month</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-secondary">{{ p.status.value }}</span>
+                    <a class="btn btn-outline-primary btn-sm" href="/properties/{{ p.id }}">Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p>No properties found.</p>
+    {% endfor %}
+</div>
+
+<div class="d-flex justify-content-between mt-4">
+    {% if has_prev %}
+    <a class="btn btn-outline-secondary" href="/properties?page={{ page - 1 }}&location={{ location }}&rooms={{ rooms }}&max_price={{ max_price }}">Previous</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+    {% if has_next %}
+    <a class="btn btn-outline-secondary" href="/properties?page={{ page + 1 }}&location={{ location }}&rooms={{ rooms }}&max_price={{ max_price }}">Next</a>
+    {% endif %}
+</div>
+{% endblock %}

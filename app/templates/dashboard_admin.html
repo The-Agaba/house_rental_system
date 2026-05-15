@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard | House Rental Pro{% endblock %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+<p class="text-muted">Welcome, {{ user.full_name }}</p>
+
+<div class="row g-3 my-2">
+    <div class="col-md-4">
+        <div class="card card-soft metric-card"><div class="card-body"><p class="mb-1 text-muted">Total Users</p><h3>{{ stats.users }}</h3></div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-soft metric-card"><div class="card-body"><p class="mb-1 text-muted">Total Properties</p><h3>{{ stats.properties }}</h3></div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-soft metric-card"><div class="card-body"><p class="mb-1 text-muted">Total Bookings</p><h3>{{ stats.bookings }}</h3></div></div>
+    </div>
+</div>
+
+<h4 class="mt-4">Recent Users</h4>
+<div class="card card-soft">
+<div class="card-body">
+<table class="table align-middle">
+    <thead>
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.full_name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role.value }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+{% endblock %}

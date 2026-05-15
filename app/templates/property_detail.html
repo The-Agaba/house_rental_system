@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Property Details | House Rental Pro{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        {% if property.images %}
+        {% set hero = property.images[0].file_path %}
+        <img src="{{ image_src(hero) }}" class="property-detail-img mb-3" alt="Main property image">
+        {% endif %}
+        <div class="card card-soft">
+            <div class="card-body">
+                <h2>{{ property.title }}</h2>
+                <p class="text-muted">{{ property.location }} | {{ property.number_of_rooms }} rooms</p>
+                <p>{{ property.description }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-soft">
+            <div class="card-body">
+                <h5 class="mb-3">Listing Details</h5>
+                <p><strong>Price:</strong> ${{ "%.2f"|format(property.price) }}/month</p>
+                <p><strong>Status:</strong> <span class="badge bg-secondary">{{ property.status.value }}</span></p>
+                <p><strong>Landlord:</strong> {{ landlord.full_name if landlord else "N/A" }}</p>
+                {% if user and user.role.value == "tenant" and property.status.value == "available" %}
+                <form method="post" action="/properties/{{ property.id }}/book">
+                    <button class="btn btn-success w-100">Request Booking</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if property.images %}
+<h4 class="mt-4">Gallery</h4>
+<div class="row g-3">
+    {% for img in property.images %}
+    <div class="col-md-4">
+        <img src="{{ image_src(img.file_path) }}" alt="Property image" class="property-detail-img">
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

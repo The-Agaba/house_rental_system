@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Home | House Rental Pro{% endblock %}
+{% block content %}
+<section class="hero p-4 p-md-5 mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-7">
+            <h1 class="display-6 fw-bold">Find your next rental, faster.</h1>
+            <p class="lead mb-4">Search verified listings, view quality photos, and request viewings instantly.</p>
+            <div class="d-flex gap-2">
+                <a href="/properties" class="btn btn-light">Browse Properties</a>
+                {% if not user %}
+                <a href="/register" class="btn btn-outline-light">Create Account</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-5 mt-4 mt-lg-0">
+            <div class="card card-soft">
+                <div class="card-body">
+                    <h5 class="mb-3">Platform Highlights</h5>
+                    <ul class="mb-0">
+                        <li>Tenant, landlord, and admin dashboards</li>
+                        <li>Property booking and approval workflow</li>
+                        <li>Image galleries via uploads or stock links</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<h3 class="mb-3">Featured Homes</h3>
+<div class="row g-3">
+    {% for p in featured %}
+    <div class="col-md-4">
+        <div class="card card-soft h-100 overflow-hidden">
+            {% set image = p.images[0].file_path if p.images else None %}
+            <img src="{{ image_src(image) }}" class="property-card-img" alt="Property image">
+            <div class="card-body">
+                <h5 class="card-title">{{ p.title }}</h5>
+                <p class="card-text text-muted mb-2">{{ p.location }} | {{ p.number_of_rooms }} rooms</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <p class="card-text fw-semibold mb-0">${{ "%.2f"|format(p.price) }}/month</p>
+                    <a href="/properties/{{ p.id }}" class="btn btn-outline-primary btn-sm">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p>No properties found.</p>
+    {% endfor %}
+</div>
+{% endblock %}
