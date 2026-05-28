@@ -16,6 +16,8 @@ import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
 import PropertyForm from './pages/PropertyForm';
 import Manual from './pages/Manual';
+import LandlordJoinRequest from './pages/LandlordJoinRequest';
+import LandlordEmailVerify from './pages/LandlordEmailVerify';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
@@ -34,6 +36,8 @@ function AppRoutes() {
       <Route path="/properties" element={<Properties />} />
       <Route path="/properties/:id" element={<PropertyDetail />} />
       <Route path="/manual" element={<Manual />} />
+      <Route path="/become-landlord" element={<LandlordJoinRequest />} />
+      <Route path="/verify-landlord" element={<LandlordEmailVerify />} />
       
       {/* Protected Routes */}
       <Route path="/dashboard" element={
@@ -43,13 +47,13 @@ function AppRoutes() {
       } />
       
       <Route path="/properties/new" element={
-        <ProtectedRoute roles={['landlord', 'admin']}>
+        <ProtectedRoute roles={['landlord', 'admin', 'agent']}>
           <PropertyForm />
         </ProtectedRoute>
       } />
       
       <Route path="/properties/:id/edit" element={
-        <ProtectedRoute roles={['landlord', 'admin']}>
+        <ProtectedRoute roles={['landlord', 'admin', 'agent']}>
           <PropertyForm />
         </ProtectedRoute>
       } />

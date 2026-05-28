@@ -2,10 +2,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Home, Search, LayoutDashboard, LogOut, Menu, X,
-  PlusCircle, Sun, Moon, ChevronDown
+  PlusCircle, Sun, Moon, KeyRound
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -88,7 +89,7 @@ const Navbar = () => {
             {/* Dark mode */}
             <button
               onClick={toggleDark}
-              className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 flex items-center justify-center transition-all"
+              className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 flex items-center justify-center transition-all shrink-0"
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -97,19 +98,22 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <Link
                   to="/dashboard"
-                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isActive('/dashboard') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors shrink-0 ${isActive('/dashboard') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
                 >
                   <LayoutDashboard size={16} /> Dashboard
                 </Link>
 
-                {user.role === 'landlord' && (
-                  <Link to="/properties/new" className="btn-primary !py-2 !px-4 !text-xs">
+                {(user.role === 'landlord' || user.role === 'agent') && (
+                  <Link to="/properties/new" className="btn-primary !py-2 !px-4 !text-xs shrink-0">
                     <PlusCircle size={14} /> Add Listing
                   </Link>
                 )}
 
+                {/* Notifications Bell */}
+                <NotificationBell />
+
                 {/* Avatar + name */}
-                <div className="flex items-center gap-2 pl-3 border-l border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2 pl-3 border-l border-slate-200 dark:border-slate-700 shrink-0">
                   <div className="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-bold text-sm flex items-center justify-center">
                     {user.fullName?.charAt(0)}
                   </div>
@@ -121,14 +125,20 @@ const Navbar = () => {
 
                 <button
                   onClick={handleLogout}
-                  className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center justify-center transition-all"
+                  className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center justify-center transition-all shrink-0"
                   title="Log out"
                 >
                   <LogOut size={17} />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
+                <Link to="/become-landlord" className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-450 transition-all">
+                  Become a Landlord
+                </Link>
+                <Link to="/verify-landlord" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-all">
+                  <KeyRound size={14} /> Verify Code
+                </Link>
                 <Link to="/login"    className="btn-ghost !py-2 !px-4 !text-sm">Log In</Link>
                 <Link to="/register" className="btn-primary !py-2 !px-4 !text-sm">Sign Up</Link>
               </div>
@@ -211,9 +221,19 @@ const Navbar = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link to="/login"    className="btn-secondary text-sm justify-center !py-3">Log In</Link>
-                    <Link to="/register" className="btn-primary  text-sm justify-center !py-3">Sign Up</Link>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-2">
+                      <Link to="/become-landlord" className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-800">
+                        Become a Landlord
+                      </Link>
+                      <Link to="/verify-landlord" className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-sm font-bold text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-900/30">
+                        <KeyRound size={16} /> Verify Code
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Link to="/login"    className="btn-secondary text-sm justify-center !py-3">Log In</Link>
+                      <Link to="/register" className="btn-primary  text-sm justify-center !py-3">Sign Up</Link>
+                    </div>
                   </div>
                 )}
               </div>

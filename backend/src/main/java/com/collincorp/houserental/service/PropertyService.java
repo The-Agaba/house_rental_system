@@ -51,7 +51,7 @@ public class PropertyService {
     public List<PropertyResponse> listMine() {
         UserEntity u = SecurityUtils.currentUser();
         return propertyRepository.findAllByLandlordIdOrderByIdDesc(u.getId()).stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, true))
                 .toList();
     }
 
@@ -63,15 +63,13 @@ public class PropertyService {
             PropertyAvailability availability,
             Pageable pageable) {
 
-        boolean isAdmin = false;
-        try {
-            isAdmin = SecurityUtils.currentUser().getRole() == UserRole.admin;
-        } catch (Exception e) {
-            // Unauthenticated guest or regular user
-        }
+        UserEntity user = currentUserOrNull();
+        boolean isAdmin = user != null && user.getRole() == UserRole.admin;
+        boolean canManageListings = user != null && (user.getRole() == UserRole.admin || user.getRole() == UserRole.agent);
 
         Specification<PropertyEntity> spec = buildSpec(location, maxPrice, minRooms, availability, isAdmin);
-        return propertyRepository.findAll(spec, pageable).map(this::toResponse);
+        return propertyRepository.findAll(spec, pageable)
+                .map(p -> toResponse(p, canManageListings || isOwner(p, user)));
     }
 
     @Transactional(readOnly = true)
@@ -94,13 +92,14 @@ public class PropertyService {
                 throw ex;
             }
         }
-        return toResponse(p);
+        UserEntity user = currentUserOrNull();
+        return toResponse(p, canViewContactDetails(p, user));
     }
 
     @Transactional
     public PropertyResponse create(PropertyCreateRequest req) {
         UserEntity user = SecurityUtils.currentUser();
-        if (user.getRole() != UserRole.landlord && user.getRole() != UserRole.admin) {
+        if (user.getRole() != UserRole.landlord && user.getRole() != UserRole.admin && user.getRole() != UserRole.agent) {
             throw new ApiException(HttpStatus.FORBIDDEN, "landlord_role_required");
         }
         PropertyEntity p = new PropertyEntity();
@@ -113,10 +112,14 @@ public class PropertyService {
         p.setAvailability(req.availability() != null ? req.availability() : PropertyAvailability.available);
         p.setPhone(req.phone());
         p.setContactEmail(req.contactEmail());
-        p.setApproved(user.getRole() == UserRole.admin); // Admin creations are auto-approved
+        p.setApproved(user.getRole() == UserRole.admin || user.getRole() == UserRole.agent); // Auto-approve if agent/admin
+        p.setNeedsImages(true);
+        if (user.getRole() == UserRole.agent) {
+            p.setRegisteredByAgent(user);
+        }
         PropertyEntity saved = propertyRepository.save(p);
         logService.log(LogAction.PROPERTY_CREATED, "property", saved.getId(), "Created property listing: " + saved.getTitle());
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
     @Transactional
@@ -149,12 +152,12 @@ public class PropertyService {
         if (req.contactEmail() != null) {
             p.setContactEmail(req.contactEmail());
         }
-        if (SecurityUtils.currentUser().getRole() != UserRole.admin) {
+        if (SecurityUtils.currentUser().getRole() != UserRole.admin && SecurityUtils.currentUser().getRole() != UserRole.agent) {
             p.setApproved(false);
         }
         PropertyEntity saved = propertyRepository.save(p);
         logService.log(LogAction.PROPERTY_UPDATED, "property", saved.getId(), "Updated property listing details: " + saved.getTitle());
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
     @Transactional
@@ -171,16 +174,16 @@ public class PropertyService {
     @Transactional
     public PropertyResponse approve(long id, boolean approved) {
         UserEntity user = SecurityUtils.currentUser();
-        if (user.getRole() != UserRole.admin) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "admin_only");
+        if (user.getRole() != UserRole.admin && user.getRole() != UserRole.agent) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "admin_or_agent_only");
         }
         PropertyEntity p = propertyRepository
                 .findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "property_not_found"));
         p.setApproved(approved);
         PropertyEntity saved = propertyRepository.save(p);
-        logService.log(LogAction.PROPERTY_UPDATED, "property", saved.getId(), "Admin updated approval status to " + approved + " for property: " + saved.getTitle());
-        return toResponse(saved);
+        logService.log(LogAction.PROPERTY_UPDATED, "property", saved.getId(), "Admin/agent updated approval status to " + approved + " for property: " + saved.getTitle());
+        return toResponse(saved, true);
     }
 
     @Transactional
@@ -200,6 +203,12 @@ public class PropertyService {
             p.getImages().add(img);
             responses.add(new PropertyImageResponse(img.getId(), img.getFilePath()));
         }
+
+        if (!responses.isEmpty()) {
+            p.setNeedsImages(false);
+            propertyRepository.save(p);
+        }
+
         return responses;
     }
 
@@ -215,12 +224,16 @@ public class PropertyService {
         img.setProperty(p);
         img = propertyImageRepository.save(img);
         p.getImages().add(img);
+        
+        p.setNeedsImages(false);
+        propertyRepository.save(p);
+
         return new PropertyImageResponse(img.getId(), img.getFilePath());
     }
 
     private void assertOwnerOrAdmin(PropertyEntity p) {
         UserEntity u = SecurityUtils.currentUser();
-        if (u.getRole() == UserRole.admin) {
+        if (u.getRole() == UserRole.admin || u.getRole() == UserRole.agent) {
             return;
         }
         if (u.getRole() != UserRole.landlord || !p.getLandlord().getId().equals(u.getId())) {
@@ -229,6 +242,10 @@ public class PropertyService {
     }
 
     private PropertyResponse toResponse(PropertyEntity p) {
+        return toResponse(p, true);
+    }
+
+    private PropertyResponse toResponse(PropertyEntity p, boolean includeContactDetails) {
         List<PropertyImageResponse> imgs = p.getImages().stream()
                 .map(i -> new PropertyImageResponse(i.getId(), i.getFilePath()))
                 .toList();
@@ -236,7 +253,7 @@ public class PropertyService {
         return new PropertyResponse(
                 p.getId(),
                 p.getLandlord().getId(),
-                p.getLandlord().getEmail(),
+                includeContactDetails ? p.getLandlord().getEmail() : null,
                 p.getTitle(),
                 p.getDescription(),
                 p.getLocation(),
@@ -246,9 +263,34 @@ public class PropertyService {
                 p.isApproved(),
                 p.getCreatedAt(),
                 imgs,
-                p.getPhone(),
-                p.getContactEmail(),
-                bookingCount);
+                includeContactDetails ? p.getPhone() : null,
+                includeContactDetails ? p.getContactEmail() : null,
+                bookingCount,
+                p.isNeedsImages(),
+                p.getRegisteredByAgent() != null ? p.getRegisteredByAgent().getId() : null);
+    }
+
+    private UserEntity currentUserOrNull() {
+        try {
+            return SecurityUtils.currentUser();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean canViewContactDetails(PropertyEntity p, UserEntity user) {
+        if (user == null) {
+            return false;
+        }
+        return user.getRole() == UserRole.admin
+                || user.getRole() == UserRole.agent
+                || isOwner(p, user);
+    }
+
+    private boolean isOwner(PropertyEntity p, UserEntity user) {
+        return user != null
+                && user.getRole() == UserRole.landlord
+                && p.getLandlord().getId().equals(user.getId());
     }
 
     private static Specification<PropertyEntity> buildSpec(

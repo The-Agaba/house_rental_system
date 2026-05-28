@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const errorMap = {
     'invalid_credentials': 'The email or password you entered is incorrect.',
     'email_taken': 'This email is already registered. Please log in instead.',
+    'landlord_email_not_verified': 'Your landlord account email has not been verified yet. Please check your inbox for the OTP code and verify.',
     'validation_failed': 'Please check your input and try again.',
     'unexpected_error': 'Something went wrong on our end. Please try again later.'
   };

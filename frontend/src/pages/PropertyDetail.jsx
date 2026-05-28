@@ -4,11 +4,14 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Bed, DollarSign, ShieldCheck, ChevronLeft,
-  Send, Star, CheckCircle2, Shield, Share2, Heart,
-  Maximize2, Loader2, Wifi, Car, Trees, Wind, MessageSquare
+  Star, CheckCircle2, Shield, Share2, Heart,
+  Maximize2, Loader2, Wifi, Car, Trees, Wind, ListOrdered
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import ReservationQueue from '../components/ReservationQueue';
+import ReservationCalendar from '../components/ReservationCalendar';
+import CostEstimator from '../components/CostEstimator';
 
 const AMENITIES = [
   { icon: Wifi,         label: 'High-Speed Fiber' },
@@ -27,12 +30,12 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [activeImg, setActiveImg] = useState(0);
-  const [message,  setMessage]  = useState('');
   const [sending,  setSending]  = useState(false);
   const [liked,    setLiked]    = useState(false);
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [moveInDate, setMoveInDate] = useState('');
+  const [durationMonths, setDurationMonths] = useState(3);
+  const [queueRefreshKey, setQueueRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
@@ -48,24 +51,23 @@ const PropertyDetail = () => {
     fetch();
   }, [id, navigate]);
 
-  const handleSend = async (e) => {
+  const handleJoinQueue = async (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please log in to contact the landlord'); navigate('/login'); return; }
-    if (!startDate || !endDate) { toast.error('Please select start and end dates'); return; }
+    if (!user) { toast.error('Please log in to join the reservation queue'); navigate('/login'); return; }
+    if (user.role !== 'tenant') { toast.error('Only tenant accounts can reserve properties'); return; }
+    if (!moveInDate) { toast.error('Please choose a move-in date'); return; }
     setSending(true);
     try {
-      await axios.post('/bookings', { 
+      await axios.post('/reservations', { 
         propertyId: property.id, 
-        startDate: startDate,
-        endDate: endDate,
-        message: message 
+        moveInDate,
+        durationMonths
       });
-      toast.success('Coordinate / Booking Request sent successfully!');
-      setMessage('');
-      setStartDate('');
-      setEndDate('');
+      toast.success('You joined the reservation queue');
+      setMoveInDate('');
+      setQueueRefreshKey(prev => prev + 1);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send — please try again');
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to join queue');
     } finally {
       setSending(false);
     }
@@ -189,7 +191,7 @@ const PropertyDetail = () => {
               {[
                 { label: 'Bedrooms',   value: property.rooms,   icon: Bed         },
                 { label: 'Monthly',    value: `$${property.pricePerMonth?.toLocaleString()}`, icon: DollarSign },
-                { label: 'Requests',   value: property.bookingCount || 0, icon: MessageSquare },
+                { label: 'Queue',      value: property.bookingCount || 0, icon: ListOrdered },
                 { label: 'Rating',     value: '4.9 / 5',        icon: Star        },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="card p-4 text-center">
@@ -234,85 +236,65 @@ const PropertyDetail = () => {
               transition={{ delay: 0.2 }}
               className="glass-card p-7"
             >
-              <h3 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Contact Landlord</h3>
+              <h3 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Reserve This Home</h3>
 
               {/* Landlord badge */}
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-primary-600 text-white text-xl font-extrabold flex items-center justify-center shadow-lg shadow-primary-600/20 shrink-0">
-                  {property.landlordEmail?.charAt(0).toUpperCase()}
+                  <ShieldCheck size={26} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <p className="font-bold text-slate-900 dark:text-white text-sm">Verified Partner</p>
                     <ShieldCheck size={14} className="text-primary-500 shrink-0" />
                   </div>
-                  <p className="text-xs text-slate-500 truncate">{property.landlordEmail}</p>
-                  {property.phone && <p className="text-xs text-slate-500 mt-1">{property.phone}</p>}
-                  {property.contactEmail && <p className="text-xs text-slate-500">{property.contactEmail}</p>}
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Contact details stay private until your reservation is accepted.
+                  </p>
                 </div>
               </div>
 
               {!user ? (
                 <div className="text-center py-6">
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Please log in to contact the landlord and request viewings.</p>
-                  <Link to="/login" className="btn-primary w-full !py-3">Login to Inquire</Link>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Please log in as a tenant to join the reservation queue.</p>
+                  <Link to="/login" className="btn-primary w-full !py-3">Login to Reserve</Link>
                 </div>
               ) : (
                 <>
-                  <form onSubmit={handleSend} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Move-In</label>
-                        <input 
-                          type="date"
-                          required
-                          className="input-field py-3 text-xs"
-                          value={startDate}
-                          onChange={e => setStartDate(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Move-Out</label>
-                        <input 
-                          type="date"
-                          required
-                          className="input-field py-3 text-xs"
-                          value={endDate}
-                          onChange={e => setEndDate(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Your Message</label>
-                      <textarea
-                        required rows={5}
-                        className="input-field resize-none py-4"
-                        placeholder="Hi, I'm interested in this property. Is it available for viewing?"
-                        value={message}
-                        onChange={e => setMessage(e.target.value)}
-                      />
-                    </div>
+                  <form onSubmit={handleJoinQueue} className="space-y-5">
+                    <ReservationCalendar
+                      propertyId={property.id}
+                      selectedDate={moveInDate}
+                      onDateSelected={setMoveInDate}
+                    />
+                    <CostEstimator
+                      pricePerMonth={Number(property.pricePerMonth || 0)}
+                      durationMonths={durationMonths}
+                      onDurationChange={setDurationMonths}
+                    />
 
                     <button type="submit" disabled={sending} className="btn-primary w-full !py-4 text-base group">
                       {sending
                         ? <Loader2 className="animate-spin" size={20} />
-                        : <><Send size={18} /> Send Inquiry</>
+                        : <><ListOrdered size={18} /> Join Queue</>
                       }
                     </button>
                   </form>
 
                   <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <ShieldCheck size={13} className="text-green-500" /> Secure & Protected Contact
+                    <ShieldCheck size={13} className="text-green-500" /> FCFS queue with 24-hour confirmation
                   </div>
                 </>
               )}
             </motion.div>
 
-            {/* Availability nudge */}
             {user && (
-              <div className="card p-6 text-center bg-primary-50/50 dark:bg-primary-950/20 border-primary-100 dark:border-primary-900">
-                <p className="text-sm font-bold text-primary-700 dark:text-primary-400 mb-3">Interested in a viewing?</p>
-                <button className="btn-secondary w-full text-sm">Request a Tour</button>
+              <div className="card p-6 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800">
+                <ReservationQueue
+                  key={queueRefreshKey}
+                  propertyId={property.id}
+                  onQueueUpdated={() => setQueueRefreshKey(prev => prev + 1)}
+                />
               </div>
             )}
           </div>

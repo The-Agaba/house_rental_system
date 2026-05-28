@@ -9,8 +9,8 @@ import com.collincorp.houserental.dto.AdminUserSaveRequest;
 import com.collincorp.houserental.dto.UserResponse;
 import com.collincorp.houserental.entity.UserEntity;
 import com.collincorp.houserental.repository.BookingRepository;
-import com.collincorp.houserental.repository.MessageRepository;
 import com.collincorp.houserental.repository.PropertyRepository;
+import com.collincorp.houserental.repository.ReservationRepository;
 import com.collincorp.houserental.repository.UserRepository;
 import com.collincorp.houserental.support.SecurityUtils;
 import java.util.List;
@@ -25,7 +25,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final BookingRepository bookingRepository;
-    private final MessageRepository messageRepository;
+    private final ReservationRepository reservationRepository;
     private final PasswordEncoder passwordEncoder;
     private final LogService logService;
 
@@ -33,13 +33,13 @@ public class AdminService {
             UserRepository userRepository,
             PropertyRepository propertyRepository,
             BookingRepository bookingRepository,
-            MessageRepository messageRepository,
+            ReservationRepository reservationRepository,
             PasswordEncoder passwordEncoder,
             LogService logService) {
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.bookingRepository = bookingRepository;
-        this.messageRepository = messageRepository;
+        this.reservationRepository = reservationRepository;
         this.passwordEncoder = passwordEncoder;
         this.logService = logService;
     }
@@ -65,6 +65,9 @@ public class AdminService {
         u.setFullName(req.fullName());
         u.setRole(req.role() != null ? req.role() : UserRole.tenant);
         u.setActive(req.active() != null ? req.active() : true);
+        u.setLocality(req.locality());
+        u.setPhone(req.phone());
+        u.setEmailVerified(true); // Admin-created accounts are auto-verified
         u.setCreatedBy(SecurityUtils.currentUser().getId());
         UserEntity saved = userRepository.save(u);
         logService.log(LogAction.USER_CREATED, "user", saved.getId(), "Admin created user: " + saved.getEmail());
@@ -96,6 +99,12 @@ public class AdminService {
         if (req.active() != null) {
             u.setActive(req.active());
         }
+        if (req.locality() != null) {
+            u.setLocality(req.locality());
+        }
+        if (req.phone() != null) {
+            u.setPhone(req.phone());
+        }
         
         UserEntity saved = userRepository.save(u);
         logService.log(LogAction.USER_UPDATED, "user", saved.getId(), "Admin updated user: " + saved.getEmail());
@@ -111,6 +120,12 @@ public class AdminService {
         }
         if (req.role() != null) {
             u.setRole(req.role());
+        }
+        if (req.locality() != null) {
+            u.setLocality(req.locality());
+        }
+        if (req.phone() != null) {
+            u.setPhone(req.phone());
         }
         UserEntity saved = userRepository.save(u);
         logService.log(LogAction.USER_UPDATED, "user", saved.getId(), "Admin patched user: " + saved.getEmail());
@@ -144,7 +159,7 @@ public class AdminService {
                 userRepository.count(),
                 propertyRepository.count(),
                 bookingRepository.count(),
-                messageRepository.count());
+                reservationRepository.count());
     }
 
     private void assertAdmin() {
@@ -154,6 +169,17 @@ public class AdminService {
     }
 
     private UserResponse toUser(UserEntity u) {
-        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole().name(), u.isActive(), u.getCreatedBy());
+        return new UserResponse(
+                u.getId(),
+                u.getEmail(),
+                u.getFullName(),
+                u.getRole().name(),
+                u.isActive(),
+                u.getCreatedBy(),
+                u.getLocality(),
+                u.getPhone(),
+                u.isEmailVerified(),
+                u.getTinNumber()
+        );
     }
 }

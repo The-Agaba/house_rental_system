@@ -40,11 +40,11 @@ public class PropertyEntity {
     @Column(nullable = false, length = 512)
     private String location;
 
-    @Column(name = "price_per_month", nullable = false, precision = 12, scale = 2)
-    private BigDecimal pricePerMonth;
+    @Column(name = "price_per_month", precision = 12, scale = 2)
+    private BigDecimal pricePerMonth = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private int rooms;
+    private int rooms = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -52,6 +52,13 @@ public class PropertyEntity {
 
     @Column(nullable = false)
     private boolean approved = false;
+
+    @Column(name = "needs_images", nullable = false)
+    private boolean needsImages = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registered_by_agent_id")
+    private UserEntity registeredByAgent;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
@@ -71,6 +78,22 @@ public class PropertyEntity {
 
     public void setApproved(boolean approved) {
         this.approved = approved;
+    }
+
+    public boolean isNeedsImages() {
+        return needsImages;
+    }
+
+    public void setNeedsImages(boolean needsImages) {
+        this.needsImages = needsImages;
+    }
+
+    public UserEntity getRegisteredByAgent() {
+        return registeredByAgent;
+    }
+
+    public void setRegisteredByAgent(UserEntity registeredByAgent) {
+        this.registeredByAgent = registeredByAgent;
     }
 
     public Long getId() {

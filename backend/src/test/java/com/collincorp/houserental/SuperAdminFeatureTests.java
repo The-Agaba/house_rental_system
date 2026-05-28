@@ -90,7 +90,9 @@ class SuperAdminFeatureTests {
                 "AdminPassword@123",
                 "Super Admin B",
                 UserRole.admin,
-                true
+                true,
+                null,
+                null
         );
         UserResponse adminBResponse = adminService.createUser(createReq);
         assertNotNull(adminBResponse);

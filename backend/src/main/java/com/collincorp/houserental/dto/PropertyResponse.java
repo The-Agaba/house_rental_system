@@ -19,4 +19,6 @@ public record PropertyResponse(
         List<PropertyImageResponse> images,
         String phone,
         String contactEmail,
-        long bookingCount) {}
+        long bookingCount,
+        boolean needsImages,
+        Long registeredByAgentId) {}

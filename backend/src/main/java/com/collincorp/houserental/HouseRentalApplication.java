@@ -7,12 +7,16 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @SpringBootApplication
+@EnableScheduling
 public class HouseRentalApplication {
 
     public static void main(String[] args) {
         loadDotEnv();
         SpringApplication.run(HouseRentalApplication.class, args);
+        System.out.println("");
     }
 
     private static void loadDotEnv() {
@@ -53,4 +57,6 @@ public class HouseRentalApplication {
             System.out.println(".env file not found. Falling back to default/environment variables.");
         }
     }
+
 }
+

@@ -41,7 +41,7 @@ public class AuthService {
         }
 
         UserRole role = req.role() != null ? req.role() : UserRole.tenant;
-        if (role == UserRole.admin) {
+        if (role == UserRole.admin || role == UserRole.landlord || role == UserRole.agent) {
             role = UserRole.tenant;
         }
 
@@ -51,6 +51,7 @@ public class AuthService {
         u.setFullName(req.fullName());
         u.setRole(role);
         u.setActive(true); // Explicitly mark active since email is verified via OTP
+        u.setEmailVerified(true); // Default users who register via OTP directly are verified
 
         userRepository.save(u);
 
@@ -72,6 +73,10 @@ public class AuthService {
         if (!u.isActive()) {
             logService.log(LogAction.LOGIN, "user", u.getId(), u.getId(), u.getEmail(), "Failed login attempt: account inactive");
             throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid_credentials");
+        }
+        if (u.getRole() == UserRole.landlord && !u.isEmailVerified()) {
+            logService.log(LogAction.LOGIN, "user", u.getId(), u.getId(), u.getEmail(), "Failed login attempt: landlord email not verified");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "landlord_email_not_verified");
         }
         if (!passwordEncoder.matches(req.password(), u.getPasswordHash())) {
             logService.log(LogAction.LOGIN, "user", u.getId(), u.getId(), u.getEmail(), "Failed login attempt: incorrect password");
@@ -108,6 +113,17 @@ public class AuthService {
 
     private static UserResponse toUser(UserEntity u) {
         // Keeps the comprehensive fields from Code A to match logging requirements
-        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole().name(), u.isActive(), u.getCreatedBy());
+        return new UserResponse(
+                u.getId(),
+                u.getEmail(),
+                u.getFullName(),
+                u.getRole().name(),
+                u.isActive(),
+                u.getCreatedBy(),
+                u.getLocality(),
+                u.getPhone(),
+                u.isEmailVerified(),
+                u.getTinNumber()
+        );
     }
 }

@@ -98,32 +98,17 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Role selector */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-3 ml-1">I want to…</label>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { role: 'tenant',   Icon: UserCircle, label: 'Rent a Home',      sub: 'Browse & inquire' },
-                  { role: 'landlord', Icon: Building2,  label: 'List a Property',  sub: 'Manage listings'  },
-                ].map(({ role, Icon, label, sub }) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, role }))}
-                    className={`flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all text-center ${
-                      form.role === role
-                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
-                  >
-                    <Icon size={28} className={form.role === role ? 'text-primary-600' : 'text-slate-400'} />
-                    <div>
-                      <p className="font-bold text-sm">{label}</p>
-                      <p className="text-[11px] opacity-70 font-medium mt-0.5">{sub}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+            {/* Landlord application CTA banner */}
+            <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-center">
+              <p className="text-xs text-blue-700 dark:text-blue-400 font-bold">
+                Are you a landlord looking to rent out property?
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
+                Landlords are registered via local agents after verification.
+              </p>
+              <Link to="/become-landlord" className="inline-flex items-center gap-1 text-xs font-extrabold text-primary-600 dark:text-primary-400 hover:underline mt-3">
+                Apply to join RentHub as a Landlord <ArrowRight size={14} />
+              </Link>
             </div>
 
             {/* Terms notice */}

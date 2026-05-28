@@ -84,6 +84,8 @@ public class FavoriteService {
                 imgs,
                 p.getPhone(),
                 p.getContactEmail(),
-                bookingCount);
+                bookingCount,
+                p.isNeedsImages(),
+                p.getRegisteredByAgent() != null ? p.getRegisteredByAgent().getId() : null);
     }
 }

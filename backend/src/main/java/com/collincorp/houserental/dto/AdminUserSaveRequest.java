@@ -9,5 +9,7 @@ public record AdminUserSaveRequest(
         String password,
         String fullName,
         UserRole role,
-        Boolean active
+        Boolean active,
+        String locality,
+        String phone
 ) {}

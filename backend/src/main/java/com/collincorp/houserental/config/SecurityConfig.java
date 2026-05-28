@@ -59,6 +59,10 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**")
                 .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/landlord-requests", "/api/v1/landlord-requests/verify", "/api/v1/landlord-requests/verify-and-activate")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/reservations/property/*/queue", "/api/v1/reservations/property/*/available-dates")
+                .permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/properties", "/api/v1/properties/**")
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/search")

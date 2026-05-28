@@ -9,8 +9,10 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/house_rental}
-    username: ${DB_USERNAME:dominic}
-    password: ${DB_PASSWORD:1234}
+    #username: ${DB_USERNAME:postgres}
+    #password: ${DB_PASSWORD:Jay9Nine!}
+    username: postgres
+    password: Jay9Nine!
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -31,7 +33,7 @@ spring:
     repair-on-migrate: true
     # Added baseline configurations to force startup matching on non-empty schema public
     baseline-on-migrate: true
-    baseline-version: "0"
+    baseline-version: "6"
 
   mail:
     host: smtp.gmail.com

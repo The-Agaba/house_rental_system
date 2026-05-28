@@ -24,8 +24,36 @@ public class EmailVerificationService {
     // Stores email -> temporary registration details before DB insertion
     private final Map<String, RegisterRequest> pendingRegistrations = new ConcurrentHashMap<>();
 
+    // Stores email -> verification code for existing landlords
+    private final Map<String, String> landlordVerificationCodes = new ConcurrentHashMap<>();
+
     public EmailVerificationService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+    }
+
+    public void sendLandlordVerificationEmail(String email) {
+        String cleanEmail = email.trim().toLowerCase();
+        String code = String.format("%06d", new Random().nextInt(1000000));
+        landlordVerificationCodes.put(cleanEmail, code);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject("Verify Your Landlord Account - RentHub");
+        message.setText("Congratulations! Your landlord registration request on RentHub has been approved.\n\n" +
+                "To verify your email and activate your account, please use the following OTP code: " + code + "\n\n" +
+                "Once verified, you will be able to log in, complete your profile, and upload images for your registered properties.\n\n" +
+                "Welcome to RentHub!");
+        mailSender.send(message);
+    }
+
+    public boolean verifyLandlordCode(String email, String code) {
+        String cleanEmail = email.trim().toLowerCase();
+        if (landlordVerificationCodes.containsKey(cleanEmail) && landlordVerificationCodes.get(cleanEmail).equals(code)) {
+            landlordVerificationCodes.remove(cleanEmail);
+            return true;
+        }
+        return false;
     }
 
     public void queuePendingRegistration(RegisterRequest request) {
