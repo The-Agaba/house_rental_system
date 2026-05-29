@@ -31,10 +31,16 @@ public class EmailVerificationService {
         this.mailSender = mailSender;
     }
 
-    public void sendLandlordVerificationEmail(String email) {
+    public String generateLandlordVerificationCode(String email) {
         String cleanEmail = email.trim().toLowerCase();
         String code = String.format("%06d", new Random().nextInt(1000000));
         landlordVerificationCodes.put(cleanEmail, code);
+        return code;
+    }
+
+    public void sendLandlordVerificationEmail(String email) {
+        String cleanEmail = email.trim().toLowerCase();
+        String code = generateLandlordVerificationCode(cleanEmail);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(senderEmail);

@@ -188,6 +188,15 @@ public class LandlordOnboardingService {
             throw new ApiException(HttpStatus.CONFLICT, "email_taken");
         }
 
+        List<LandlordDocumentEntity> documents = landlordDocumentRepository.findByLandlordRequestId(request.getId());
+        boolean hasOwnershipDocument = documents.stream()
+                .anyMatch(doc -> "OWNERSHIP".equalsIgnoreCase(doc.getDocumentType()));
+        boolean hasTinDocument = documents.stream()
+                .anyMatch(doc -> "TIN".equalsIgnoreCase(doc.getDocumentType()));
+        if (!hasOwnershipDocument || !hasTinDocument) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "missing_required_documents");
+        }
+
         // 1. Create Landlord UserEntity
         UserEntity landlord = new UserEntity();
         landlord.setEmail(request.getRequesterEmail());
@@ -237,23 +246,19 @@ public class LandlordOnboardingService {
 
         logService.log(LogAction.LANDLORD_APPROVED, "landlord_request", request.getId(), agent.getId(), request.getRequesterEmail(), "Landlord request approved by agent");
 
-        // 4. Send Verification Email with temporary password and OTP
-        emailVerificationService.sendLandlordVerificationEmail(landlord.getEmail());
+        // 4. Generate OTP and send the account activation message through the persisted notification pipeline.
+        String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
 
-        // We can also send a notification or audit log
-        try {
-            notificationService.sendNotification(
-                    landlord.getId(),
-                    NotificationType.LANDLORD_REQUEST_UPDATE,
-                    "Welcome to RentHub! Account Approved",
-                    "Your landlord request has been approved!\n\n" +
-                    "Your temporary password is: " + tempPassword + "\n\n" +
-                    "Please verify your email using the verification code sent to your email to log in and update your password.",
-                    request.getId()
-            );
-        } catch (Exception e) {
-            // Ignore notification failure if landlord doesn't fully exist yet
-        }
+        notificationService.sendNotification(
+                landlord.getId(),
+                NotificationType.LANDLORD_REQUEST_UPDATE,
+                "Welcome to RentHub! Account Approved",
+                "Your landlord request has been approved.\n\n" +
+                "Your activation code is: " + verificationCode + "\n" +
+                "Your temporary password is: " + tempPassword + "\n\n" +
+                "Open the landlord verification page, verify your email, and choose a new password before logging in.",
+                request.getId()
+        );
 
         return toResponse(request);
     }

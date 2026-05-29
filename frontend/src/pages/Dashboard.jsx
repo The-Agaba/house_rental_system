@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Building2, Calendar, Trash2, Edit3, Plus, 
   MapPin, Loader2, AlertCircle, Home,
-  TrendingUp, Users, ShieldAlert, ChevronRight, Bell, Settings,
+  TrendingUp, Users, ShieldAlert, ChevronRight, Settings,
   ArrowUpRight, Clock, Star, ShieldCheck, DollarSign, Percent, 
   Activity, CheckCircle2, User, KeyRound, Mail, Sparkles, HelpCircle,
   Menu, X, LogOut, ChevronDown, Award, Search, Play, Pause, Square,
@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DocumentUploader from '../components/DocumentUploader';
+import NotificationBell from '../components/NotificationBell';
 
 // ── GLOBAL SVG STRIPES DEFINITION ──
 const StripesDef = () => (
@@ -401,10 +402,11 @@ const Dashboard = () => {
   const [approvingRequest, setApprovingRequest] = useState(null);
   const [approvedProperties, setApprovedProperties] = useState([{ title: '', location: '' }]);
   const [approvalNotes, setApprovalNotes] = useState('Verified proof of ownership. Approved.');
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
   // User management modal states
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [userForm, setUserForm] = useState({ id: null, email: '', fullName: '', password: '', role: 'tenant', active: true });
+  const [userForm, setUserForm] = useState({ id: null, email: '', fullName: '', password: '', role: 'tenant', active: true, locality: '', phone: '' });
 
   // Profile Edit State
   const [profileForm, setProfileForm] = useState({ fullName: '', password: '' });
@@ -621,7 +623,9 @@ const Dashboard = () => {
         fullName: userToEdit.fullName || '',
         password: '',
         role: userToEdit.role || 'tenant',
-        active: userToEdit.active
+        active: userToEdit.active,
+        locality: userToEdit.locality || '',
+        phone: userToEdit.phone || ''
       });
     } else {
       setUserForm({
@@ -630,7 +634,9 @@ const Dashboard = () => {
         fullName: '',
         password: '',
         role: 'tenant',
-        active: true
+        active: true,
+        locality: '',
+        phone: ''
       });
     }
     setUserModalOpen(true);
@@ -645,7 +651,9 @@ const Dashboard = () => {
           fullName: userForm.fullName,
           password: userForm.password || null,
           role: userForm.role,
-          active: userForm.active
+          active: userForm.active,
+          locality: userForm.locality,
+          phone: userForm.phone
         });
         toast.success('User updated successfully');
       } else {
@@ -654,7 +662,9 @@ const Dashboard = () => {
           fullName: userForm.fullName,
           password: userForm.password,
           role: userForm.role,
-          active: userForm.active
+          active: userForm.active,
+          locality: userForm.locality,
+          phone: userForm.phone
         });
         toast.success('User added successfully');
       }
@@ -694,6 +704,9 @@ const Dashboard = () => {
       } else if (status === 'cancelled') {
         await axios.put(`/reservations/${reservationId}/cancel`);
         toast.success('Reservation cancelled successfully');
+      } else if (status === 'confirmed') {
+        await axios.put(`/reservations/${reservationId}/confirm`);
+        toast.success('Reservation confirmed successfully');
       }
       fetchDashboardData();
     } catch (err) {
@@ -711,21 +724,34 @@ const Dashboard = () => {
   const handleModalApproveSubmit = async (e) => {
     e.preventDefault();
     if (!approvingRequest) return;
+    const hasOwnershipDocument = approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'OWNERSHIP');
+    const hasTinDocument = approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'TIN');
+    if (!hasOwnershipDocument || !hasTinDocument) {
+      toast.error('Upload both OWNERSHIP and TIN documents before approval.');
+      return;
+    }
     if (approvedProperties.some(p => !p.title.trim() || !p.location.trim())) {
       toast.error('Please fill in title and location for all properties.');
       return;
     }
 
+    setSubmittingApproval(true);
     try {
       await axios.put(`/landlord-requests/${approvingRequest.id}/approve`, {
         notes: approvalNotes,
         properties: approvedProperties
       });
-      toast.success('Landlord approved and properties registered');
+      toast.success('Landlord approved, properties registered, and activation email queued.');
       setApprovalModalOpen(false);
+      setApprovingRequest(null);
       fetchDashboardData();
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to approve landlord request');
+      const errorKey = err.response?.data?.message || err.response?.data?.error;
+      toast.error(errorKey === 'missing_required_documents'
+        ? 'Upload both OWNERSHIP and TIN documents before approval.'
+        : errorKey || 'Failed to approve landlord request');
+    } finally {
+      setSubmittingApproval(false);
     }
   };
 
@@ -959,6 +985,7 @@ const Dashboard = () => {
           <span className="font-display font-black text-sm tracking-tight text-slate-900 dark:text-white">RentalHub</span>
         </div>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <button 
             onClick={toggleDark}
             className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-all"
@@ -1075,12 +1102,7 @@ const Dashboard = () => {
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            <button className="relative w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 flex items-center justify-center text-slate-400 transition-all">
-              <Bell size={18} />
-              {landlordPendingRequests > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-600 animate-pulse" />
-              )}
-            </button>
+            <NotificationBell />
 
             <div className="flex items-center gap-3.5 pl-6 border-l border-slate-100 dark:border-slate-900">
               <div className="text-right">
@@ -1664,6 +1686,71 @@ const Dashboard = () => {
             </motion.div>
           )}
 
+          {/* Active Tab: Audit Logs (Admin Only) */}
+          {activeTab === 'logs' && user.role === 'admin' && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
+            >
+              <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-950 dark:text-white">Audit Logs</h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Review system actions, users, and operational history.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 overflow-x-auto">
+                {data.logs?.length > 0 ? (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        <th className="pb-4">Action</th>
+                        <th className="pb-4">Entity</th>
+                        <th className="pb-4">User</th>
+                        <th className="pb-4">Details</th>
+                        <th className="pb-4 text-right">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
+                      {data.logs.map(log => (
+                        <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4">
+                            <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-bold uppercase tracking-wider">
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="py-4 text-slate-500 dark:text-slate-400">
+                            {log.entityType || 'system'}{log.entityId ? ` #${log.entityId}` : ''}
+                          </td>
+                          <td className="py-4 text-slate-500 dark:text-slate-400 break-all">
+                            {log.userEmail || 'anonymous'}
+                          </td>
+                          <td className="py-4 text-slate-700 dark:text-slate-200 min-w-[18rem]">
+                            {log.details || 'No details recorded'}
+                          </td>
+                          <td className="py-4 text-right text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                            {log.createdAt ? new Date(log.createdAt).toLocaleString() : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-center py-20 text-slate-400">
+                    <ShieldAlert className="mx-auto mb-4 opacity-20" size={48} />
+                    <p className="font-medium italic">No audit logs found.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'requests' && (user.role === 'agent' || user.role === 'admin') && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
@@ -1731,7 +1818,7 @@ const Dashboard = () => {
                             </div>
 
                             {request.status !== 'approved' && request.status !== 'rejected' && (
-                              <div className="w-full xl:w-[28rem] shrink-0">
+                              <div className="w-full xl:w-[36rem] shrink-0">
                                 <DocumentUploader requestId={request.id} onUploadSuccess={fetchDashboardData} />
                               </div>
                             )}
@@ -1867,20 +1954,39 @@ const Dashboard = () => {
                           </div>
                         </div>
 
-                        {user.role === 'landlord' && book.status === 'confirmed' && (
+                        {user.role === 'tenant' && book.status === 'awaiting_confirmation' && (
+                          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                              onClick={() => handleReservationAction(book.id, 'cancelled')}
+                              className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleReservationAction(book.id, 'confirmed')}
+                              className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10"
+                            >
+                              Confirm Reservation
+                            </button>
+                          </div>
+                        )}
+
+                        {user.role === 'landlord' && ['queued', 'awaiting_confirmation', 'confirmed'].includes(book.status) && (
                           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <button 
                               onClick={() => handleReservationAction(book.id, 'cancelled')} 
                               className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95"
                             >
-                              Cancel
+                              Deny
                             </button>
-                            <button 
-                              onClick={() => handleReservationAction(book.id, 'accepted')} 
-                              className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10"
-                            >
-                              Accept Reservation
-                            </button>
+                            {book.status === 'confirmed' && (
+                              <button 
+                                onClick={() => handleReservationAction(book.id, 'accepted')} 
+                                className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10"
+                              >
+                                Accept Reservation
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1897,6 +2003,273 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      <AnimatePresence>
+        {userModalOpen && user.role === 'admin' && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="user-management-title"
+              className="w-full max-w-xl rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            >
+              <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">
+                    {userForm.id ? 'Edit account' : 'Add account'}
+                  </p>
+                  <h3 id="user-management-title" className="text-xl font-black text-slate-950 dark:text-white">
+                    {userForm.id ? 'Update User' : 'Create User'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUserModalOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  aria-label="Close user modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveUser} className="p-6 space-y-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Full name</label>
+                    <input
+                      type="text"
+                      className="input-field text-sm"
+                      value={userForm.fullName}
+                      onChange={(e) => setUserForm(f => ({ ...f, fullName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Email</label>
+                    <input
+                      type="email"
+                      required
+                      className="input-field text-sm"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm(f => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">
+                      Password{userForm.id ? ' (optional)' : ''}
+                    </label>
+                    <input
+                      type="password"
+                      required={!userForm.id}
+                      className="input-field text-sm"
+                      value={userForm.password}
+                      onChange={(e) => setUserForm(f => ({ ...f, password: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Role</label>
+                    <select
+                      className="input-field text-sm"
+                      value={userForm.role}
+                      onChange={(e) => setUserForm(f => ({ ...f, role: e.target.value }))}
+                    >
+                      <option value="tenant">Tenant</option>
+                      <option value="landlord">Landlord</option>
+                      <option value="agent">Agent</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Locality</label>
+                    <input
+                      type="text"
+                      className="input-field text-sm"
+                      value={userForm.locality}
+                      onChange={(e) => setUserForm(f => ({ ...f, locality: e.target.value }))}
+                      placeholder="Required for agents"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      className="input-field text-sm"
+                      value={userForm.phone}
+                      onChange={(e) => setUserForm(f => ({ ...f, phone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/30 px-4 py-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={userForm.active}
+                    onChange={(e) => setUserForm(f => ({ ...f, active: e.target.checked }))}
+                    className="h-4 w-4 accent-primary-600"
+                  />
+                  Account active
+                </label>
+
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setUserModalOpen(false)}
+                    className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold"
+                  >
+                    {userForm.id ? 'Save User' : 'Create User'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {approvalModalOpen && approvingRequest && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="landlord-approval-title"
+              className="w-full max-w-2xl rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            >
+              <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">Final landlord approval</p>
+                  <h3 id="landlord-approval-title" className="text-xl font-black text-slate-950 dark:text-white">
+                    {approvingRequest.requesterFullName}
+                  </h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400 break-all">
+                    {approvingRequest.requesterEmail}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false);
+                    setApprovingRequest(null);
+                  }}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  aria-label="Close approval modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleModalApproveSubmit} className="p-6 space-y-6">
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 text-xs font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
+                  Approval creates the landlord account, registers the listed properties, and sends a saved notification/email containing the activation code and temporary password.
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Verified properties</label>
+                    <button
+                      type="button"
+                      onClick={() => setApprovedProperties(items => [...items, { title: '', location: '' }])}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-primary-600 dark:text-primary-400"
+                    >
+                      <Plus size={14} /> Add Property
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {approvedProperties.map((property, index) => (
+                      <div key={index} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                        <input
+                          type="text"
+                          required
+                          className="input-field text-sm"
+                          placeholder="Property title"
+                          value={property.title}
+                          onChange={(e) => setApprovedProperties(items => items.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, title: e.target.value } : item
+                          )))}
+                        />
+                        <input
+                          type="text"
+                          required
+                          className="input-field text-sm"
+                          placeholder="Property location"
+                          value={property.location}
+                          onChange={(e) => setApprovedProperties(items => items.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, location: e.target.value } : item
+                          )))}
+                        />
+                        <button
+                          type="button"
+                          disabled={approvedProperties.length === 1}
+                          onClick={() => setApprovedProperties(items => items.filter((_, itemIndex) => itemIndex !== index))}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-red-600 disabled:opacity-40"
+                          aria-label="Remove property"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Approval notes</label>
+                  <textarea
+                    className="input-field min-h-24 text-sm"
+                    value={approvalNotes}
+                    onChange={(e) => setApprovalNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApprovalModalOpen(false);
+                      setApprovingRequest(null);
+                    }}
+                    className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold"
+                    disabled={submittingApproval}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold"
+                    disabled={submittingApproval}
+                  >
+                    {submittingApproval ? (
+                      <><Loader2 className="animate-spin" size={16} /> Approving...</>
+                    ) : (
+                      <>Approve and Send Email</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

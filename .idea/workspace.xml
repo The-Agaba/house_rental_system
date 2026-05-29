@@ -5,42 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1130bfe6-f1a2-4c70-9fe1-f758a26b7a39" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/backend_startup.log" beforeDir="false" afterPath="$PROJECT_DIR$/backend/backend_startup.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/HouseRentalApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/HouseRentalApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/api/v1/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/api/v1/AdminController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/api/v1/MessageController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/LogAction.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/LogAction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/UserRole.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/UserRole.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminStatsResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminStatsResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminUserPatchRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminUserPatchRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminUserSaveRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/AdminUserSaveRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/MessageCreateRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/MessageResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/PropertyResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/PropertyResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/UserResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/UserResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/PropertyEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/PropertyEntity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/UserEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/UserEntity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/repository/UserRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/AdminService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/AdminService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/AuthService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/EmailVerificationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/EmailVerificationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/FavoriteService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/FavoriteService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/MessageService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/PropertyService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/PropertyService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/assets/index-B4zg37p5.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/assets/index-BX9_twcq.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/static/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/test/java/com/collincorp/houserental/SuperAdminFeatureTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/java/com/collincorp/houserental/SuperAdminFeatureTests.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/Navbar.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Navbar.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/context/AuthContext.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/context/AuthContext.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/PropertyDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/PropertyDetail.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Register.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Register.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

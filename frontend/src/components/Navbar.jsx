@@ -148,6 +148,7 @@ const Navbar = () => {
 
         {/* ── Mobile burger ─────────────────────────────── */}
         <div className="md:hidden flex items-center gap-2">
+          {user && <NotificationBell />}
           <button
             onClick={toggleDark}
             className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center"
