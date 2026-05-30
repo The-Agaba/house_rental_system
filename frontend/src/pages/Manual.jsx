@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Book, ChevronRight, Home, Printer, Shield, 
-  MapPin, Clock, ArrowLeft, ArrowUpRight, Bed, DollarSign,
+  MapPin, Clock, ArrowLeft, ArrowUpRight, Bed,
   Info, CheckCircle2, ShieldCheck, Mail, Phone, Users, ShieldAlert,
   Menu, X, Sparkles
 } from 'lucide-react';

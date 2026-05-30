@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, MapPin, Bed, DollarSign, Filter, SlidersHorizontal,
+  Search, MapPin, Bed, Banknote, Filter, SlidersHorizontal,
   Loader2, ChevronRight, LayoutGrid, List as ListIcon, X, ChevronDown
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -256,9 +256,9 @@ const Properties = () => {
 
                 {/* Max Price */}
                 <div className="w-full sm:w-44">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Max Price / mo</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Max Price / mo (TZS)</label>
+                    <div className="relative">
+                    <Banknote className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
                     <input
                       type="number" placeholder="Any"
                       className="input-field !pl-10"
