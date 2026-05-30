@@ -98,7 +98,7 @@ flowchart LR
      - *Location / City*: Enter precise geo-parameters (e.g. *Park Slope, Brooklyn*).
      - *Availability Status*: Choose between `Live & Available`, `Rented`, or `Hidden/Unavailable`.
      - *Phone & Contact Email*: Input specific contact parameters which override the account credentials for this listing.
-     - *Monthly Rent ($)*: Input the lease rate.
+     - *Monthly Rent (TZS)*: Input the lease rate in Tanzanian Shillings.
      - *Total Rooms*: Set number of bedrooms.
   3. **Provide Description**: Write a high-yield description. Detailed descriptions increase lease rates by 40%.
   4. **Visual Showcase Uploads**:

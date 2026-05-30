@@ -57,7 +57,7 @@ public class ReservationService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "property_not_approved");
         }
 
-        if (property.getAvailability() != PropertyAvailability.available) {
+        if (property.getAvailability() == PropertyAvailability.unavailable) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "property_not_available");
         }
 
@@ -334,12 +334,22 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public LocalDate getEarliestMoveInDate(Long propertyId) {
+        PropertyEntity property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "property_not_found"));
+
         List<ReservationEntity> active = reservationRepository.findByPropertyIdAndStatusInOrderByQueuePositionAsc(
                 propertyId,
                 Arrays.asList(ReservationStatus.queued, ReservationStatus.awaiting_confirmation, ReservationStatus.confirmed)
         );
 
         LocalDate earliest = LocalDate.now().plusDays(1);
+        if (property.getAvailability() == PropertyAvailability.rented) {
+            LocalDate minimumStartDate = earliest;
+            earliest = getActiveRentalEndDate(propertyId)
+                    .filter(endDate -> endDate.isAfter(minimumStartDate))
+                    .orElse(minimumStartDate);
+        }
+
         for (ReservationEntity r : active) {
             if (r.getMoveInDate().isAfter(earliest) || r.getMoveInDate().isEqual(earliest)) {
                 earliest = r.getMoveInDate().plusMonths(r.getDurationMonths());
@@ -348,6 +358,15 @@ public class ReservationService {
             }
         }
         return earliest;
+    }
+
+    private Optional<LocalDate> getActiveRentalEndDate(Long propertyId) {
+        return reservationRepository.findByPropertyIdAndStatusInOrderByQueuePositionAsc(
+                        propertyId,
+                        Arrays.asList(ReservationStatus.accepted)
+                ).stream()
+                .map(r -> r.getMoveInDate().plusMonths(r.getDurationMonths()))
+                .max(LocalDate::compareTo);
     }
 
     @Transactional(readOnly = true)

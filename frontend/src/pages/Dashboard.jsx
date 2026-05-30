@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DocumentUploader from '../components/DocumentUploader';
 import NotificationBell from '../components/NotificationBell';
+import { formatTzs } from '../utils/currency';
 
 // ── GLOBAL SVG STRIPES DEFINITION ──
 const StripesDef = () => (
@@ -411,6 +412,8 @@ const Dashboard = () => {
   // Profile Edit State
   const [profileForm, setProfileForm] = useState({ fullName: '', password: '' });
   const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [acceptingPropertyId, setAcceptingPropertyId] = useState(null);
+  const [acceptingReservationId, setAcceptingReservationId] = useState(null);
 
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark')
@@ -595,12 +598,24 @@ const Dashboard = () => {
   };
 
   const handleApproveProperty = async (propertyId, approvedVal) => {
+    setAcceptingPropertyId(propertyId);
     try {
       await axios.put(`/properties/${propertyId}/approve`, null, { params: { approved: approvedVal } });
+      setData(prev => ({
+        ...prev,
+        properties: prev.properties.map(prop => (
+          prop.id === propertyId ? { ...prop, approved: approvedVal } : prop
+        )),
+        marketplace: prev.marketplace.map(prop => (
+          prop.id === propertyId ? { ...prop, approved: approvedVal } : prop
+        ))
+      }));
       toast.success(approvedVal ? 'Property approved and added to marketplace' : 'Property left unapproved');
-      fetchDashboardData();
+      void fetchDashboardDataBackground();
     } catch (err) {
       toast.error('Failed to update property approval status');
+    } finally {
+      setAcceptingPropertyId(null);
     }
   };
 
@@ -697,20 +712,72 @@ const Dashboard = () => {
   };
 
   const handleReservationAction = async (reservationId, status) => {
+    if (status === 'accepted') {
+      setAcceptingReservationId(reservationId);
+    }
     try {
       if (status === 'accepted') {
         await axios.put(`/reservations/${reservationId}/accept`);
+        setData(prev => {
+          const acceptedReservation = prev.bookings.find(book => book.id === reservationId);
+          const propertyId = acceptedReservation?.propertyId;
+
+          const updatedBookings = prev.bookings.map(book => {
+            if (book.id === reservationId) {
+              return { ...book, status: 'accepted', queuePosition: 0 };
+            }
+
+            if (
+              propertyId &&
+              book.propertyId === propertyId &&
+              ['queued', 'awaiting_confirmation', 'confirmed'].includes(book.status)
+            ) {
+              return { ...book, status: 'cancelled', queuePosition: 0 };
+            }
+
+            return book;
+          });
+
+          const updatePropertyAvailability = property => (
+            propertyId && property.id === propertyId
+              ? { ...property, availability: 'rented' }
+              : property
+          );
+
+          return {
+            ...prev,
+            bookings: updatedBookings,
+            properties: prev.properties.map(updatePropertyAvailability),
+            marketplace: prev.marketplace.map(updatePropertyAvailability)
+          };
+        });
         toast.success('Reservation accepted successfully');
       } else if (status === 'cancelled') {
         await axios.put(`/reservations/${reservationId}/cancel`);
+        setData(prev => ({
+          ...prev,
+          bookings: prev.bookings.map(book => (
+            book.id === reservationId ? { ...book, status: 'cancelled', queuePosition: 0 } : book
+          ))
+        }));
         toast.success('Reservation cancelled successfully');
       } else if (status === 'confirmed') {
         await axios.put(`/reservations/${reservationId}/confirm`);
+        setData(prev => ({
+          ...prev,
+          bookings: prev.bookings.map(book => (
+            book.id === reservationId ? { ...book, status: 'confirmed' } : book
+          ))
+        }));
         toast.success('Reservation confirmed successfully');
       }
-      fetchDashboardData();
+      void fetchDashboardDataBackground();
     } catch (err) {
       toast.error('Failed to update reservation');
+    } finally {
+      if (status === 'accepted') {
+        setAcceptingReservationId(null);
+      }
     }
   };
 
@@ -836,7 +903,7 @@ const Dashboard = () => {
       return [
         { label: 'Active Listings', value: totalPropsCount, desc: `${totalPropsCount - rentedPropsCount} available for lease`, highlight: true },
         { label: 'Occupied Units', value: rentedPropsCount, desc: `${rentedPropsCount} leased properties` },
-        { label: 'Estimated Revenue', value: `$${landlordMonthlyRevenue.toLocaleString()}`, desc: 'Total monthly occupied rent' },
+        { label: 'Estimated Revenue', value: formatTzs(landlordMonthlyRevenue), desc: 'Total monthly occupied rent' },
         { label: 'Ready to Accept', value: landlordPendingRequests, desc: `${landlordPendingRequests} confirmed reservations` }
       ];
     } else if (user.role === 'admin') {
@@ -851,7 +918,7 @@ const Dashboard = () => {
         { label: 'Accepted Leases', value: tenantApprovedLeases, desc: 'Reservations accepted', highlight: true },
         { label: 'Queue Entries', value: data.bookings.length, desc: 'Total reservation attempts' },
         { label: 'Awaiting Turn', value: tenantPendingRequests, desc: `${tenantPendingRequests} active queue records` },
-        { label: 'Committed Cost', value: `$${tenantMonthlyCommitment.toLocaleString()}`, desc: 'Accepted reservation cost' }
+        { label: 'Committed Cost', value: formatTzs(tenantMonthlyCommitment), desc: 'Accepted reservation cost' }
       ];
     }
   };
@@ -1245,9 +1312,11 @@ const Dashboard = () => {
                             <div className="grid grid-cols-2 gap-2">
                               <button 
                                 onClick={() => handleApproveProperty(prop.id, true)}
-                                className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                                className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
+                                disabled={acceptingPropertyId === prop.id}
                               >
-                                Accept
+                                {acceptingPropertyId === prop.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                                {acceptingPropertyId === prop.id ? 'Accepting...' : 'Accept'}
                               </button>
                               <button
                                 onClick={() => handleDenyProperty(prop.id)}
@@ -1349,7 +1418,7 @@ const Dashboard = () => {
                                 </div>
                               </div>
                               <span className="text-[9px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full shrink-0">
-                                ${prop.pricePerMonth}/mo
+                                {formatTzs(prop.pricePerMonth)}/mo
                               </span>
                             </div>
                           ))}
@@ -1451,7 +1520,7 @@ const Dashboard = () => {
                               </span>
                             </div>
                             <div className="absolute bottom-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-white font-bold text-xs">
-                              ${prop.pricePerMonth?.toLocaleString()}/mo
+                              {formatTzs(prop.pricePerMonth)}/mo
                             </div>
                           </div>
 
@@ -1534,7 +1603,7 @@ const Dashboard = () => {
                               </span>
                             </div>
                             <div className="absolute bottom-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-white font-bold text-xs">
-                              ${prop.pricePerMonth?.toLocaleString()}/mo
+                              {formatTzs(prop.pricePerMonth)}/mo
                             </div>
                           </div>
 
@@ -1555,9 +1624,11 @@ const Dashboard = () => {
                               <>
                                 <button
                                   onClick={() => handleApproveProperty(prop.id, true)}
-                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1"
+                                  disabled={acceptingPropertyId === prop.id}
                                 >
-                                  Accept
+                                  {acceptingPropertyId === prop.id ? <Loader2 className="animate-spin" size={12} /> : null}
+                                  {acceptingPropertyId === prop.id ? 'Accepting...' : 'Accept'}
                                 </button>
                                 <button
                                   onClick={() => handleDenyProperty(prop.id)}
@@ -1949,7 +2020,7 @@ const Dashboard = () => {
                               <strong className="text-slate-400">Queue:</strong> #{book.queuePosition || '-'}
                             </div>
                             <div>
-                              <strong className="text-slate-400">Cost:</strong> ${Number(book.estimatedTotalCost || 0).toLocaleString()}
+                              <strong className="text-slate-400">Cost:</strong> {formatTzs(book.estimatedTotalCost)}
                             </div>
                           </div>
                         </div>
@@ -1982,9 +2053,11 @@ const Dashboard = () => {
                             {book.status === 'confirmed' && (
                               <button 
                                 onClick={() => handleReservationAction(book.id, 'accepted')} 
-                                className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10"
+                                className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
+                                disabled={acceptingReservationId === book.id}
                               >
-                                Accept Reservation
+                                {acceptingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                                {acceptingReservationId === book.id ? 'Accepting...' : 'Accept Reservation'}
                               </button>
                             )}
                           </div>

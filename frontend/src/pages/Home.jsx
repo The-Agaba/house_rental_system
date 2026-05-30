@@ -4,6 +4,7 @@ import { Search, Building2, ShieldCheck, ArrowRight, Star, CheckCircle2, Bed, Ma
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import background from '../assets/background.webm';
+import { formatTzs } from '../utils/currency';
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
 const stagger = { show: { transition: { staggerChildren: 0.1 } } };
@@ -24,7 +25,7 @@ const FeaturedCard = ({ prop, index }) => (
           </span>
         </div>
         <div className="absolute bottom-4 left-4 text-white">
-          <p className="text-2xl font-extrabold">${prop.pricePerMonth?.toLocaleString()}</p>
+          <p className="text-2xl font-extrabold">{formatTzs(prop.pricePerMonth)}</p>
           <p className="text-xs opacity-80 font-medium">per month</p>
         </div>
       </div>

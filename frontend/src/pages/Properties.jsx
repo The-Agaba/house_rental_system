@@ -6,6 +6,7 @@ import {
   Loader2, ChevronRight, LayoutGrid, List as ListIcon, X, ChevronDown
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatTzs } from '../utils/currency';
 
 
 /* ── Skeleton ──────────────────────────────────────────────── */
@@ -49,7 +50,7 @@ const GridCard = ({ prop, i }) => (
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors line-clamp-1 flex-1">{prop.title}</h3>
           <div className="text-right shrink-0">
-            <p className="font-extrabold text-slate-900 dark:text-white">${prop.pricePerMonth.toLocaleString()}</p>
+            <p className="font-extrabold text-slate-900 dark:text-white">{formatTzs(prop.pricePerMonth)}</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/mo</p>
           </div>
         </div>
@@ -98,7 +99,7 @@ const ListCard = ({ prop, i }) => (
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-3">
           <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">{prop.title}</h3>
           <div className="text-right">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">${prop.pricePerMonth.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{formatTzs(prop.pricePerMonth)}</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/month</p>
           </div>
         </div>

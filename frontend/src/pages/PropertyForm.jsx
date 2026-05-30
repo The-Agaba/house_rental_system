@@ -233,7 +233,7 @@ const PropertyForm = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Monthly Rent ($)</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Monthly Rent (TZS)</label>
                     <div className="relative">
                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-600" size={18} />
                       <input 

@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import ReservationQueue from '../components/ReservationQueue';
 import ReservationCalendar from '../components/ReservationCalendar';
 import CostEstimator from '../components/CostEstimator';
+import { formatTzs } from '../utils/currency';
 
 const AMENITIES = [
   { icon: Wifi,         label: 'High-Speed Fiber' },
@@ -176,7 +177,7 @@ const PropertyDetail = () => {
                 {property.title}
               </h1>
               <div className="text-right shrink-0">
-                <p className="text-3xl font-extrabold text-primary-600">${property.pricePerMonth?.toLocaleString()}</p>
+                <p className="text-3xl font-extrabold text-primary-600">{formatTzs(property.pricePerMonth)}</p>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">per month</p>
               </div>
             </div>
@@ -190,7 +191,7 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-8 border-y border-slate-100 dark:border-slate-800">
               {[
                 { label: 'Bedrooms',   value: property.rooms,   icon: Bed         },
-                { label: 'Monthly',    value: `$${property.pricePerMonth?.toLocaleString()}`, icon: DollarSign },
+                { label: 'Monthly',    value: formatTzs(property.pricePerMonth), icon: DollarSign },
                 { label: 'Queue',      value: property.bookingCount || 0, icon: ListOrdered },
                 { label: 'Rating',     value: '4.9 / 5',        icon: Star        },
               ].map(({ label, value, icon: Icon }) => (

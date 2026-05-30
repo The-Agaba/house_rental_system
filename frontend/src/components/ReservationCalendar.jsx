@@ -30,7 +30,7 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
     return (
       <div className="flex items-center gap-2 p-4 rounded-xl bg-slate-100 dark:bg-slate-900/40 text-xs text-slate-400 font-medium">
         <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        Calculating queue schedules...
+          Calculating availability...
       </div>
     );
   }
@@ -49,7 +49,7 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
       <div className="p-3.5 rounded-xl bg-primary-50/50 dark:bg-primary-950/10 border border-primary-100/50 dark:border-primary-900/20 flex gap-2">
         <Info size={16} className="text-primary-600 dark:text-primary-400 shrink-0 mt-0.5" />
         <p className="text-[11px] text-primary-850 dark:text-primary-300 font-semibold leading-normal">
-          Earliest available move-in date based on the current queue is: <span className="font-extrabold text-primary-600 dark:text-primary-400">{formattedEarliest}</span>.
+          Earliest available move-in date based on the queue and lease schedule is: <span className="font-extrabold text-primary-600 dark:text-primary-400">{formattedEarliest}</span>.
         </p>
       </div>
 

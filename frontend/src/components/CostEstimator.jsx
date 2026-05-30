@@ -1,4 +1,5 @@
-import { DollarSign, ChevronRight } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
+import { formatTzs } from '../utils/currency';
 
 const CostEstimator = ({ pricePerMonth, durationMonths, onDurationChange }) => {
   const estimatedTotal = pricePerMonth * durationMonths;
@@ -48,7 +49,7 @@ const CostEstimator = ({ pricePerMonth, durationMonths, onDurationChange }) => {
         <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
           <span>Monthly rent</span>
           <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-            ${pricePerMonth.toLocaleString()}/mo
+            {formatTzs(pricePerMonth)}/mo
           </span>
         </div>
         <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium border-b border-dashed border-slate-200 dark:border-slate-850 pb-2">
@@ -60,7 +61,7 @@ const CostEstimator = ({ pricePerMonth, durationMonths, onDurationChange }) => {
         <div className="flex justify-between items-center pt-2">
           <span className="text-xs font-bold text-slate-950 dark:text-white">Estimated Total Cost</span>
           <span className="text-lg font-mono font-extrabold text-primary-600 dark:text-primary-400 inline-flex items-center">
-            <DollarSign size={18} className="-mr-0.5" /> {estimatedTotal.toLocaleString()}
+            <DollarSign size={18} className="-mr-0.5" /> {formatTzs(estimatedTotal)}
           </span>
         </div>
       </div>
