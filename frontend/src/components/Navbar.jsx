@@ -103,7 +103,7 @@ const Navbar = () => {
                   <LayoutDashboard size={16} /> Dashboard
                 </Link>
 
-                {(user.role === 'landlord' || user.role === 'agent') && (
+                {user.role === 'agent' && (
                   <Link to="/properties/new" className="btn-primary !py-2 !px-4 !text-xs shrink-0">
                     <PlusCircle size={14} /> Add Listing
                   </Link>
@@ -198,7 +198,7 @@ const Navbar = () => {
                     <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400"><LayoutDashboard size={16} /></div>
                     Dashboard
                   </Link>
-                  {user.role === 'landlord' && (
+                  {user.role === 'agent' && (
                     <Link to="/properties/new" className="flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm text-primary-600 bg-primary-50 dark:bg-primary-900/20">
                       <div className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600"><PlusCircle size={16} /></div>
                       Add New Listing

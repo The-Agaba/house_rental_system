@@ -387,6 +387,53 @@ const getActionPrompt = (status) => {
   }
 };
 
+const sortNewestFirst = (items = []) => [...items].sort((a, b) => {
+  const getMs = (item) => {
+    const val = item.createdAt || item.updatedAt;
+    if (!val) return 0;
+    const parsed = Date.parse(val);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+  const diff = getMs(b) - getMs(a);
+  if (diff !== 0) return diff;
+  return Number(b.id || 0) - Number(a.id || 0);
+});
+
+const getPropertyReviewState = (property) => {
+  const hasDetails = Boolean(property.description?.trim())
+    && Number(property.pricePerMonth) > 0
+    && Number(property.rooms) > 0
+    && !property.needsImages;
+
+  if (!hasDetails) {
+    return {
+      key: 'notEdited',
+      label: 'Not Edited',
+      badge: 'bg-rose-600 text-white',
+      card: 'border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/10',
+      message: 'This verified property is hidden. Edit it and add the required details and images before it can be reviewed.'
+    };
+  }
+
+  if (!property.approved) {
+    return {
+      key: 'waitingApproval',
+      label: 'Waiting Approval',
+      badge: 'bg-amber-500 text-white',
+      card: 'border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/10',
+      message: 'Details were submitted. Wait for an agent or admin to approve it before it goes public.'
+    };
+  }
+
+  return {
+    key: 'approved',
+    label: 'Approved',
+    badge: 'bg-emerald-600 text-white',
+    card: 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30',
+    message: 'This listing is approved and visible in the public marketplace.'
+  };
+};
+
 
 const Dashboard = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -414,6 +461,9 @@ const Dashboard = () => {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [acceptingPropertyId, setAcceptingPropertyId] = useState(null);
   const [acceptingReservationId, setAcceptingReservationId] = useState(null);
+  const [propertyRequestOpen, setPropertyRequestOpen] = useState(false);
+  const [propertyRequestForm, setPropertyRequestForm] = useState({ title: '', location: '' });
+  const [submittingPropertyRequest, setSubmittingPropertyRequest] = useState(false);
 
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark')
@@ -441,7 +491,7 @@ const Dashboard = () => {
           logs: logsRes.data || [],
           users: usersRes.data || [],
           marketplace: [],
-          landlordRequests: requestRes.data || []
+          landlordRequests: sortNewestFirst(requestRes.data || [])
         });
       } else if (user.role === 'landlord') {
         const [propRes, bookRes, marketRes] = await Promise.all([
@@ -469,7 +519,7 @@ const Dashboard = () => {
           logs: [],
           users: [],
           marketplace: marketRes.data.content || marketRes.data || [],
-          landlordRequests: requestRes.data || []
+          landlordRequests: sortNewestFirst(requestRes.data || [])
         });
       } else {
         const [bookRes, propRes] = await Promise.all([
@@ -507,7 +557,7 @@ const Dashboard = () => {
           logs: logsRes.data || [],
           users: usersRes.data || [],
           marketplace: [],
-          landlordRequests: requestRes.data || []
+          landlordRequests: sortNewestFirst(requestRes.data || [])
         });
       } else if (user.role === 'landlord') {
         const [propRes, bookRes, marketRes] = await Promise.all([
@@ -535,7 +585,7 @@ const Dashboard = () => {
           logs: [],
           users: [],
           marketplace: marketRes.data.content || marketRes.data || [],
-          landlordRequests: requestRes.data || []
+          landlordRequests: sortNewestFirst(requestRes.data || [])
         });
       } else {
         const [bookRes, propRes] = await Promise.all([
@@ -594,6 +644,34 @@ const Dashboard = () => {
       fetchDashboardData();
     } catch (err) {
       toast.error('Failed to delete listing');
+    }
+  };
+
+  const handleAdditionalPropertyRequest = async (e) => {
+    e.preventDefault();
+    if (!propertyRequestForm.title.trim() || !propertyRequestForm.location.trim()) {
+      toast.error('Enter the property title and location before submitting.');
+      return;
+    }
+
+    setSubmittingPropertyRequest(true);
+    try {
+      await axios.post('/landlord-requests/additional-property', {
+        properties: [{
+          title: propertyRequestForm.title.trim(),
+          location: propertyRequestForm.location.trim()
+        }]
+      });
+      toast.success('Property request submitted. An agent or admin will verify documents before it appears here for editing.');
+      setPropertyRequestForm({ title: '', location: '' });
+      setPropertyRequestOpen(false);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error;
+      toast.error(msg === 'pending_property_request_exists'
+        ? 'You already have a property request waiting for verification.'
+        : msg || 'Failed to submit property request');
+    } finally {
+      setSubmittingPropertyRequest(false);
     }
   };
 
@@ -795,14 +873,17 @@ const Dashboard = () => {
     e.preventDefault();
     if (!approvingRequest) return;
     const claimedProperties = approvingRequest.properties || [];
-    const hasTinDocument = approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'TIN');
+    const isAdditionalPropertyRequest = approvingRequest.requestType === 'additional_property';
+    const hasTinDocument = isAdditionalPropertyRequest || approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'TIN');
     const allClaimsHaveOwnership = claimedProperties.length > 0 && claimedProperties.every(property =>
       approvingRequest.documents?.some(doc =>
         doc.documentType?.toUpperCase() === 'OWNERSHIP' && String(doc.requestPropertyId) === String(property.id)
       )
     );
     if (!hasTinDocument || !allClaimsHaveOwnership) {
-      toast.error('Upload the TIN document and one ownership document for each claimed property before approval.');
+      toast.error(isAdditionalPropertyRequest
+        ? 'Upload one ownership document for each requested property before approval.'
+        : 'Upload the TIN document and one ownership document for each claimed property before approval.');
       return;
     }
 
@@ -811,14 +892,18 @@ const Dashboard = () => {
       await axios.put(`/landlord-requests/${approvingRequest.id}/approve`, {
         notes: approvalNotes
       });
-      toast.success('Landlord approved, claimed properties saved as pending listings, and activation email queued.');
+      toast.success(isAdditionalPropertyRequest
+        ? 'Additional property approved as a pending listing. The landlord can now complete its details.'
+        : 'Landlord approved, claimed properties saved as pending listings, and activation email queued.');
       setApprovalModalOpen(false);
       setApprovingRequest(null);
       fetchDashboardData();
     } catch (err) {
       const errorKey = err.response?.data?.message || err.response?.data?.error;
       toast.error(errorKey === 'missing_required_documents'
-        ? 'Upload the TIN document and one ownership document for each claimed property before approval.'
+        ? (isAdditionalPropertyRequest
+          ? 'Upload one ownership document for each requested property before approval.'
+          : 'Upload the TIN document and one ownership document for each claimed property before approval.')
         : errorKey || 'Failed to approve landlord request');
     } finally {
       setSubmittingApproval(false);
@@ -1405,9 +1490,12 @@ const Dashboard = () => {
                       <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full">
                         <div className="flex justify-between items-center mb-4">
                           <h4 className="text-base font-display font-extrabold text-slate-950 dark:text-white tracking-tight">My Listings</h4>
-                          <Link to="/properties/new" className="text-[9px] font-bold text-primary-600 border border-primary-100 hover:bg-primary-50 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                            + New
-                          </Link>
+                          <button
+                            onClick={() => setPropertyRequestOpen(true)}
+                            className="text-[9px] font-bold text-primary-600 border border-primary-100 hover:bg-primary-50 px-2 py-0.5 rounded-md uppercase tracking-wider"
+                          >
+                            Request New
+                          </button>
                         </div>
 
                         <div className="space-y-4 max-h-[160px] overflow-y-auto no-scrollbar">
@@ -1573,22 +1661,45 @@ const Dashboard = () => {
                     <Building2 size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-950 dark:text-white">Active Listings</h2>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Review and optimize your active housing rentals.</p>
+                    <h2 className="text-xl font-bold text-slate-950 dark:text-white">Properties</h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      {user.role === 'landlord'
+                        ? 'Complete verified properties and track approval before they go public.'
+                        : 'Review, approve, and optimize housing rentals.'}
+                    </p>
                   </div>
                 </div>
-                <Link to="/properties/new" className="btn-primary !rounded-xl !py-2.5 !px-5 text-xs font-bold bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 shadow-md shadow-primary-500/10">
-                  <Plus size={14} className="stroke-[3]" /> Add Listing
-                </Link>
+                {user.role === 'landlord' ? (
+                  <button
+                    onClick={() => setPropertyRequestOpen(true)}
+                    className="btn-primary !rounded-xl !py-2.5 !px-5 text-xs font-bold bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 shadow-md shadow-primary-500/10"
+                  >
+                    <Plus size={14} className="stroke-[3]" /> Request Property
+                  </button>
+                ) : (
+                  <Link to="/properties/new" className="btn-primary !rounded-xl !py-2.5 !px-5 text-xs font-bold bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 shadow-md shadow-primary-500/10">
+                    <Plus size={14} className="stroke-[3]" /> Add Listing
+                  </Link>
+                )}
               </div>
               
-              <div className="p-8">
+              <div className="p-8 space-y-6">
+                {user.role === 'landlord' && (
+                  <div className="rounded-2xl border border-primary-100 dark:border-primary-900/50 bg-primary-50/60 dark:bg-primary-950/10 p-5">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">How verified properties become public</p>
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      New verified properties stay hidden until you edit them, add the required details and images, then wait for an agent or admin to approve the completed listing. To add another property, submit a request with its title and location so verification documents can be uploaded first.
+                    </p>
+                  </div>
+                )}
                 {data.properties.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {data.properties.map(prop => (
+                    {data.properties.map(prop => {
+                      const reviewState = getPropertyReviewState(prop);
+                      return (
                       <div 
                         key={prop.id}
-                        className="group relative rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between"
+                        className={`group relative rounded-[2rem] border hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between ${reviewState.card}`}
                       >
                         <div>
                           <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm mb-4 bg-slate-100 dark:bg-slate-800">
@@ -1601,8 +1712,8 @@ const Dashboard = () => {
                               <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${prop.availability === 'available' ? 'bg-primary-600 text-white' : 'bg-slate-500 text-white'}`}>
                                 ● {prop.availability}
                               </span>
-                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${prop.approved ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'}`}>
-                                {prop.approved ? 'Approved' : 'Pending Review'}
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${reviewState.badge}`}>
+                                {reviewState.label}
                               </span>
                             </div>
                             <div className="absolute bottom-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-white font-bold text-xs">
@@ -1615,6 +1726,17 @@ const Dashboard = () => {
                             <MapPin size={12} className="text-primary-500 shrink-0" />
                             <span className="line-clamp-1">{prop.location}</span>
                           </div>
+                          {user.role === 'landlord' && (
+                            <div className={`mb-4 rounded-2xl px-4 py-3 text-[11px] font-semibold leading-relaxed ${
+                              reviewState.key === 'notEdited'
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
+                                : reviewState.key === 'waitingApproval'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'
+                            }`}>
+                              {reviewState.message}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1623,7 +1745,7 @@ const Dashboard = () => {
                           </span>
 
                           <div className="flex items-center gap-2">
-                            {user.role === 'admin' && !prop.approved && (
+                            {(user.role === 'admin' || user.role === 'agent') && !prop.approved && reviewState.key !== 'notEdited' && (
                               <>
                                 <button
                                   onClick={() => handleApproveProperty(prop.id, true)}
@@ -1644,13 +1766,15 @@ const Dashboard = () => {
                             <Link to={`/properties/${prop.id}/edit`} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary-600 transition-all shadow-sm hover:scale-105 active:scale-95">
                               <Edit3 size={16} />
                             </Link>
-                            <button onClick={() => handleDeleteProperty(prop.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95">
-                              <Trash2 size={16} />
-                            </button>
+                            {user.role !== 'landlord' && (
+                              <button onClick={() => handleDeleteProperty(prop.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-900/10 rounded-[2rem]">
@@ -1838,7 +1962,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-slate-950 dark:text-white">Landlord Requests</h2>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Verify documents, approve landlords, and register their first properties.</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Newest requests appear first. Verify initial landlords and additional property requests.</p>
                   </div>
                 </div>
               </div>
@@ -1857,14 +1981,23 @@ const Dashboard = () => {
                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Applicant</p>
                                   <h3 className="font-bold text-slate-950 dark:text-white text-xl break-words">{request.requesterFullName}</h3>
                                 </div>
-                                <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
-                                  request.status === 'approved' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
-                                  request.status === 'rejected' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400' :
-                                  request.status === 'verified' ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400' :
-                                  'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
-                                }`}>
-                                  {request.status}
-                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
+                                    request.requestType === 'additional_property'
+                                      ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}>
+                                    {request.requestType === 'additional_property' ? 'Additional Property' : 'New Landlord'}
+                                  </span>
+                                  <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest ${
+                                    request.status === 'approved' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
+                                    request.status === 'rejected' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400' :
+                                    request.status === 'verified' ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400' :
+                                    'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
+                                  }`}>
+                                    {request.status}
+                                  </span>
+                                </div>
                               </div>
 
                               <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -2115,6 +2248,96 @@ const Dashboard = () => {
       </main>
 
       <AnimatePresence>
+        {propertyRequestOpen && user.role === 'landlord' && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="property-request-title"
+              className="w-full max-w-lg rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            >
+              <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">New property request</p>
+                  <h3 id="property-request-title" className="text-xl font-black text-slate-950 dark:text-white">Request another property</h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Submit the title and location first. An agent or admin will verify documents before the property is added to your dashboard for editing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPropertyRequestOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  aria-label="Close property request modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdditionalPropertyRequest} className="p-6 space-y-5">
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Property title</label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field text-sm"
+                    value={propertyRequestForm.title}
+                    onChange={(e) => setPropertyRequestForm(f => ({ ...f, title: e.target.value }))}
+                    placeholder="Example: Mikocheni family apartment"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Location</label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field text-sm"
+                    value={propertyRequestForm.location}
+                    onChange={(e) => setPropertyRequestForm(f => ({ ...f, location: e.target.value }))}
+                    placeholder="Example: Mikocheni, Dar es Salaam"
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 text-xs font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
+                  This does not publish a property. It creates a verification request so an agent or admin can upload ownership documents and approve the property for editing.
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPropertyRequestOpen(false)}
+                    className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold"
+                    disabled={submittingPropertyRequest}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold"
+                    disabled={submittingPropertyRequest}
+                  >
+                    {submittingPropertyRequest ? (
+                      <><Loader2 className="animate-spin" size={16} /> Submitting...</>
+                    ) : (
+                      <>Submit Request</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {userModalOpen && user.role === 'admin' && (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
@@ -2267,7 +2490,9 @@ const Dashboard = () => {
             >
               <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">Final landlord approval</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">
+                    {approvingRequest.requestType === 'additional_property' ? 'Additional property approval' : 'Final landlord approval'}
+                  </p>
                   <h3 id="landlord-approval-title" className="text-xl font-black text-slate-950 dark:text-white">
                     {approvingRequest.requesterFullName}
                   </h3>
@@ -2290,7 +2515,9 @@ const Dashboard = () => {
 
               <form onSubmit={handleModalApproveSubmit} className="p-6 space-y-6">
                 <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 text-xs font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
-                  Approval creates the landlord account and converts the claimed properties into pending listings. They stay hidden until the landlord completes prices, rooms, images, and an agent or admin approves each property.
+                  {approvingRequest.requestType === 'additional_property'
+                    ? 'Approval adds these verified properties to the existing landlord dashboard as pending listings. They stay hidden until the landlord completes prices, rooms, images, and an agent or admin approves each property.'
+                    : 'Approval creates the landlord account and converts the claimed properties into pending listings. They stay hidden until the landlord completes prices, rooms, images, and an agent or admin approves each property.'}
                 </div>
 
                 <div>
@@ -2343,7 +2570,7 @@ const Dashboard = () => {
                     {submittingApproval ? (
                       <><Loader2 className="animate-spin" size={16} /> Approving...</>
                     ) : (
-                      <>Approve and Send Email</>
+                      <>{approvingRequest.requestType === 'additional_property' ? 'Approve Property Request' : 'Approve and Send Email'}</>
                     )}
                   </button>
                 </div>

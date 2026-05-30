@@ -7,7 +7,9 @@ import com.collincorp.houserental.dto.AdminUserSaveRequest;
 import com.collincorp.houserental.dto.PropertyCreateRequest;
 import com.collincorp.houserental.dto.PropertyResponse;
 import com.collincorp.houserental.dto.UserResponse;
+import com.collincorp.houserental.entity.PropertyEntity;
 import com.collincorp.houserental.entity.UserEntity;
+import com.collincorp.houserental.repository.PropertyRepository;
 import com.collincorp.houserental.repository.UserRepository;
 import com.collincorp.houserental.security.AppUserDetails;
 import com.collincorp.houserental.service.AdminService;
@@ -38,6 +40,9 @@ class SuperAdminFeatureTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PropertyRepository propertyRepository;
 
     private UserEntity superAdminA;
     private UserEntity superAdminC;
@@ -117,30 +122,29 @@ class SuperAdminFeatureTests {
 
     @Test
     void testPropertyApprovalFlow() {
-        // 1. Authenticate as Landlord and create a property listing
-        authenticate(landlord);
-        PropertyCreateRequest createReq = new PropertyCreateRequest(
-                "Beautiful Cozy Apartment",
-                "A very cozy place near downtown",
-                "Downtown",
-                BigDecimal.valueOf(1500),
-                2,
-                PropertyAvailability.available,
-                "+123456789",
-                "landlord@test.com"
-        );
-        PropertyResponse createdResponse = propertyService.create(createReq);
-        assertNotNull(createdResponse);
-        assertFalse(createdResponse.approved(), "Listing created by Landlord should NOT be approved by default");
+        // Create a pending property listing manually
+        PropertyEntity prop = new PropertyEntity();
+        prop.setLandlord(landlord);
+        prop.setTitle("Beautiful Cozy Apartment");
+        prop.setDescription("A very cozy place near downtown");
+        prop.setLocation("Downtown");
+        prop.setPricePerMonth(BigDecimal.valueOf(1500));
+        prop.setRooms(2);
+        prop.setAvailability(PropertyAvailability.available);
+        prop.setPhone("+123456789");
+        prop.setContactEmail("landlord@test.com");
+        prop.setApproved(false);
+        prop.setNeedsImages(true);
+        prop = propertyRepository.save(prop);
 
         // 2. Authenticate as Admin and approve the property listing
         authenticate(superAdminA);
-        PropertyResponse approvedResponse = propertyService.approve(createdResponse.id(), true);
+        PropertyResponse approvedResponse = propertyService.approve(prop.getId(), true);
         assertNotNull(approvedResponse);
         assertTrue(approvedResponse.approved(), "Listing approved by Super Admin should show approved = true");
 
         // 3. Admin can unapprove (leave it)
-        PropertyResponse unapprovedResponse = propertyService.approve(createdResponse.id(), false);
+        PropertyResponse unapprovedResponse = propertyService.approve(prop.getId(), false);
         assertNotNull(unapprovedResponse);
         assertFalse(unapprovedResponse.approved(), "Listing unapproved by Super Admin should show approved = false");
     }

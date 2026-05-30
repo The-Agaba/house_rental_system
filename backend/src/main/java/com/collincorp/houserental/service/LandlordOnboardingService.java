@@ -2,6 +2,7 @@ package com.collincorp.houserental.service;
 
 import com.collincorp.houserental.api.ApiException;
 import com.collincorp.houserental.domain.LandlordRequestStatus;
+import com.collincorp.houserental.domain.LandlordRequestType;
 import com.collincorp.houserental.domain.LogAction;
 import com.collincorp.houserental.domain.NotificationType;
 import com.collincorp.houserental.domain.UserRole;
@@ -90,6 +91,7 @@ public class LandlordOnboardingService {
         entity.setRequesterPhone(dto.requesterPhone());
         entity.setLocality(dto.locality());
         entity.setTinNumber(dto.tinNumber());
+        entity.setRequestType(LandlordRequestType.initial_landlord);
         entity.setStatus(LandlordRequestStatus.pending);
 
         // 4. Find agents in locality to auto-assign
@@ -123,6 +125,70 @@ public class LandlordOnboardingService {
                     NotificationType.LANDLORD_REQUEST_UPDATE,
                     "New Landlord Request Assigned",
                     "A new landlord request from " + entity.getRequesterFullName() + " has been assigned to you in your locality (" + entity.getLocality() + ").",
+                    entity.getId()
+            );
+        }
+
+        return toResponse(entity);
+    }
+
+    @Transactional
+    public LandlordRequestResponse submitAdditionalPropertyRequest(AdditionalPropertyRequestDto dto) {
+        UserEntity landlord = com.collincorp.houserental.support.SecurityUtils.currentUser();
+        if (landlord.getRole() != UserRole.landlord) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "landlord_role_required");
+        }
+
+        List<PropertyRegistrationDto> submittedProperties = dto.properties() == null ? List.of() : dto.properties();
+        if (submittedProperties.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "property_claim_required");
+        }
+
+        boolean hasActivePropertyRequest = landlordRequestRepository.findByRequesterEmailIgnoreCase(landlord.getEmail())
+                .stream()
+                .anyMatch(req -> req.getRequestType() == LandlordRequestType.additional_property
+                        && (req.getStatus() == LandlordRequestStatus.pending
+                        || req.getStatus() == LandlordRequestStatus.assigned
+                        || req.getStatus() == LandlordRequestStatus.verified));
+        if (hasActivePropertyRequest) {
+            throw new ApiException(HttpStatus.CONFLICT, "pending_property_request_exists");
+        }
+
+        LandlordRequestEntity entity = new LandlordRequestEntity();
+        entity.setRequesterEmail(landlord.getEmail().trim().toLowerCase());
+        entity.setRequesterFullName(landlord.getFullName() != null ? landlord.getFullName() : landlord.getEmail());
+        entity.setRequesterPhone(landlord.getPhone() != null ? landlord.getPhone() : "");
+        entity.setLocality(landlord.getLocality() != null ? landlord.getLocality() : "Unassigned");
+        entity.setTinNumber(landlord.getTinNumber() != null ? landlord.getTinNumber() : "EXISTING_LANDLORD");
+        entity.setRequestType(LandlordRequestType.additional_property);
+        entity.setCreatedLandlord(landlord);
+        entity.setStatus(LandlordRequestStatus.pending);
+
+        List<UserEntity> agents = userRepository.findByRoleAndLocality(UserRole.agent, entity.getLocality());
+        if (!agents.isEmpty()) {
+            entity.setAssignedAgent(agents.get(0));
+            entity.setStatus(LandlordRequestStatus.assigned);
+        }
+
+        landlordRequestRepository.save(entity);
+
+        for (PropertyRegistrationDto pDto : submittedProperties) {
+            LandlordRequestPropertyEntity claim = new LandlordRequestPropertyEntity();
+            claim.setLandlordRequest(entity);
+            claim.setTitle(pDto.title().trim());
+            claim.setLocation(pDto.location().trim());
+            claim.setApproved(false);
+            landlordRequestPropertyRepository.save(claim);
+        }
+
+        logService.log(LogAction.LANDLORD_REQUEST_CREATED, "landlord_request", entity.getId(), landlord.getId(), landlord.getEmail(), "Additional property request submitted");
+
+        if (entity.getAssignedAgent() != null) {
+            notificationService.sendNotification(
+                    entity.getAssignedAgent().getId(),
+                    NotificationType.LANDLORD_REQUEST_UPDATE,
+                    "Additional Property Request Assigned",
+                    "A verified landlord submitted a new property request in your locality (" + entity.getLocality() + ").",
                     entity.getId()
             );
         }
@@ -208,36 +274,45 @@ public class LandlordOnboardingService {
         UserEntity agent = userRepository.findById(agentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "agent_not_found"));
 
-        if (userRepository.existsByEmailIgnoreCase(request.getRequesterEmail())) {
+        if (request.getRequestType() == LandlordRequestType.initial_landlord
+                && userRepository.existsByEmailIgnoreCase(request.getRequesterEmail())) {
             throw new ApiException(HttpStatus.CONFLICT, "email_taken");
         }
 
         List<LandlordDocumentEntity> documents = landlordDocumentRepository.findByLandlordRequestId(request.getId());
         List<LandlordRequestPropertyEntity> claimedProperties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdAsc(request.getId());
+        boolean requiresTinDocument = request.getRequestType() == LandlordRequestType.initial_landlord;
         boolean hasTinDocument = documents.stream()
                 .anyMatch(doc -> "TIN".equalsIgnoreCase(doc.getDocumentType()));
         boolean allClaimsHaveOwnershipDocument = claimedProperties.stream()
                 .allMatch(property -> landlordDocumentRepository.existsByLandlordRequestIdAndRequestPropertyIdAndDocumentTypeIgnoreCase(
                         request.getId(), property.getId(), "OWNERSHIP"));
-        if (!hasTinDocument || claimedProperties.isEmpty() || !allClaimsHaveOwnershipDocument) {
+        if ((requiresTinDocument && !hasTinDocument) || claimedProperties.isEmpty() || !allClaimsHaveOwnershipDocument) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "missing_required_documents");
         }
 
-        // 1. Create Landlord UserEntity
-        UserEntity landlord = new UserEntity();
-        landlord.setEmail(request.getRequesterEmail());
-        landlord.setFullName(request.getRequesterFullName());
-        landlord.setPhone(request.getRequesterPhone());
-        landlord.setRole(UserRole.landlord);
-        landlord.setTinNumber(request.getTinNumber());
-        landlord.setActive(true);
-        landlord.setEmailVerified(false); // Verification required via OTP
+        UserEntity landlord;
+        String tempPassword = null;
+        if (request.getRequestType() == LandlordRequestType.additional_property) {
+            landlord = request.getCreatedLandlord() != null
+                    ? request.getCreatedLandlord()
+                    : userRepository.findByEmailIgnoreCase(request.getRequesterEmail())
+                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "landlord_not_found"));
+        } else {
+            landlord = new UserEntity();
+            landlord.setEmail(request.getRequesterEmail());
+            landlord.setFullName(request.getRequesterFullName());
+            landlord.setPhone(request.getRequesterPhone());
+            landlord.setRole(UserRole.landlord);
+            landlord.setTinNumber(request.getTinNumber());
+            landlord.setActive(true);
+            landlord.setEmailVerified(false);
 
-        // Generate temporary password and hash it
-        String tempPassword = "Lnd_" + UUID.randomUUID().toString().substring(0, 8);
-        landlord.setPasswordHash(passwordEncoder.encode(tempPassword));
-        landlord.setCreatedBy(agent.getId());
-        userRepository.save(landlord);
+            tempPassword = "Lnd_" + UUID.randomUUID().toString().substring(0, 8);
+            landlord.setPasswordHash(passwordEncoder.encode(tempPassword));
+            landlord.setCreatedBy(agent.getId());
+            userRepository.save(landlord);
+        }
 
         // 2. Register the properties the landlord claimed, but keep them hidden until listing details are complete.
         for (LandlordRequestPropertyEntity pDto : claimedProperties) {
@@ -259,7 +334,6 @@ public class LandlordOnboardingService {
             logService.log(LogAction.PROPERTY_CREATED, "property", prop.getId(), agent.getId(), request.getRequesterEmail(), "Skeletal property registered by agent: " + prop.getTitle());
         }
 
-        // 3. Update Request Status
         request.setStatus(LandlordRequestStatus.approved);
         request.setCreatedLandlord(landlord);
         if (dto.notes() != null) {
@@ -269,19 +343,28 @@ public class LandlordOnboardingService {
 
         logService.log(LogAction.LANDLORD_APPROVED, "landlord_request", request.getId(), agent.getId(), request.getRequesterEmail(), "Landlord request approved by agent");
 
-        // 4. Generate OTP and send the account activation message through the persisted notification pipeline.
-        String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
+        if (request.getRequestType() == LandlordRequestType.additional_property) {
+            notificationService.sendNotification(
+                    landlord.getId(),
+                    NotificationType.LANDLORD_REQUEST_UPDATE,
+                    "Additional Property Verified",
+                    "Your additional property request has been verified. Open the dashboard, complete the property details, then wait for final admin or agent approval before it goes public.",
+                    request.getId()
+            );
+        } else {
+            String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
 
-        notificationService.sendNotification(
-                landlord.getId(),
-                NotificationType.LANDLORD_REQUEST_UPDATE,
-                "Welcome to RentHub! Account Approved",
-                "Your landlord request has been approved.\n\n" +
-                "Your activation code is: " + verificationCode + "\n" +
-                "Your temporary password is: " + tempPassword + "\n\n" +
-                "Open the landlord verification page, verify your email, and choose a new password before logging in.",
-                request.getId()
-        );
+            notificationService.sendNotification(
+                    landlord.getId(),
+                    NotificationType.LANDLORD_REQUEST_UPDATE,
+                    "Welcome to RentHub! Account Approved",
+                    "Your landlord request has been approved.\n\n" +
+                    "Your activation code is: " + verificationCode + "\n" +
+                    "Your temporary password is: " + tempPassword + "\n\n" +
+                    "Open the landlord verification page, verify your email, and choose a new password before logging in.",
+                    request.getId()
+            );
+        }
 
         return toResponse(request);
     }
@@ -343,7 +426,7 @@ public class LandlordOnboardingService {
 
     @Transactional(readOnly = true)
     public List<LandlordRequestResponse> getRequestsAssignedToMe(Long agentId) {
-        return landlordRequestRepository.findByAssignedAgentId(agentId)
+        return landlordRequestRepository.findByAssignedAgentIdOrderByCreatedAtDesc(agentId)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -351,7 +434,7 @@ public class LandlordOnboardingService {
 
     @Transactional(readOnly = true)
     public List<LandlordRequestResponse> getAllRequests() {
-        return landlordRequestRepository.findAll()
+        return landlordRequestRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -390,6 +473,7 @@ public class LandlordOnboardingService {
                 entity.getRequesterPhone(),
                 entity.getLocality(),
                 entity.getTinNumber(),
+                entity.getRequestType(),
                 entity.getStatus(),
                 entity.getAssignedAgent() != null ? entity.getAssignedAgent().getId() : null,
                 entity.getAssignedAgent() != null ? entity.getAssignedAgent().getFullName() : null,

@@ -47,7 +47,7 @@ function AppRoutes() {
       } />
       
       <Route path="/properties/new" element={
-        <ProtectedRoute roles={['landlord', 'admin', 'agent']}>
+        <ProtectedRoute roles={['admin', 'agent']}>
           <PropertyForm />
         </ProtectedRoute>
       } />

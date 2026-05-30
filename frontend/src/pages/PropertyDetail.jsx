@@ -39,6 +39,7 @@ const PropertyDetail = () => {
   const [queueRefreshKey, setQueueRefreshKey] = useState(0);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     const fetch = async () => {
       try {
         const res = await axios.get(`/properties/${id}`, { timeout: 4000 });

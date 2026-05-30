@@ -1,6 +1,7 @@
 package com.collincorp.houserental.dto;
 
 import com.collincorp.houserental.domain.LandlordRequestStatus;
+import com.collincorp.houserental.domain.LandlordRequestType;
 import java.time.Instant;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public record LandlordRequestResponse(
         String requesterPhone,
         String locality,
         String tinNumber,
+        LandlordRequestType requestType,
         LandlordRequestStatus status,
         Long assignedAgentId,
         String assignedAgentName,

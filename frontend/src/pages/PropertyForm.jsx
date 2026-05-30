@@ -33,6 +33,17 @@ const PropertyForm = () => {
   const [previews, setPreviews] = useState([]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id && user?.role === 'landlord') {
+      toast.error('Request a new property from your dashboard so it can be verified first.');
+      navigate('/dashboard');
+    }
+  }, [id, user, navigate]);
+
+  useEffect(() => {
     if (id) {
       const fetchProperty = async () => {
         setLoading(true);
@@ -115,7 +126,11 @@ const PropertyForm = () => {
         await axios.post(`/properties/${propertyId}/images`, imgData);
       }
 
-      toast.success(id ? 'Listing updated successfully!' : 'Listing published to marketplace!');
+      toast.success(id
+        ? (user?.role === 'landlord'
+          ? 'Property details submitted. Please wait for an agent or admin to approve it before it goes public.'
+          : 'Listing updated successfully!')
+        : 'Listing published to marketplace!');
       navigate('/dashboard');
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message || 'Failed to save listing';
@@ -149,9 +164,13 @@ const PropertyForm = () => {
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
           <div className="max-w-xl">
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-slate-950 dark:text-white leading-tight">
-               {id ? 'Refine your' : 'Publish a new'} <span className="text-primary-600">Listing.</span>
+               {id ? 'Complete your' : 'Publish a new'} <span className="text-primary-600">Listing.</span>
             </h1>
-            <p className="text-slate-500 font-medium">Capture the attention of elite tenants with high-quality details and stunning visuals.</p>
+            <p className="text-slate-500 font-medium">
+              {user?.role === 'landlord' && id
+                ? 'After saving, this property waits for an agent or admin to approve it before it appears publicly.'
+                : 'Capture the attention of tenants with high-quality details and clear visuals.'}
+            </p>
           </div>
           <div className="hidden md:flex gap-4 p-5 glass-card rounded-2xl items-center text-xs font-bold text-slate-400 uppercase tracking-widest">
             <Sparkles size={18} className="text-primary-600" /> AI Enhanced Listing Guide
@@ -328,6 +347,9 @@ const PropertyForm = () => {
                   <li className="text-[10px] text-slate-400 font-medium leading-relaxed">• Minimum 3 high-resolution images.</li>
                   <li className="text-[10px] text-slate-400 font-medium leading-relaxed">• Max file size: 5MB per image.</li>
                   <li className="text-[10px] text-slate-400 font-medium leading-relaxed">• Supported: JPG, PNG, WEBP.</li>
+                  {user?.role === 'landlord' && (
+                    <li className="text-[10px] text-amber-600 dark:text-amber-300 font-bold leading-relaxed">• Saving sends the listing back for approval before it goes public.</li>
+                  )}
                 </ul>
               </div>
             </div>

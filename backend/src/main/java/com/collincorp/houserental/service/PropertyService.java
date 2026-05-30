@@ -99,7 +99,7 @@ public class PropertyService {
     @Transactional
     public PropertyResponse create(PropertyCreateRequest req) {
         UserEntity user = SecurityUtils.currentUser();
-        if (user.getRole() != UserRole.landlord && user.getRole() != UserRole.admin && user.getRole() != UserRole.agent) {
+        if (user.getRole() != UserRole.admin && user.getRole() != UserRole.agent) {
             throw new ApiException(HttpStatus.FORBIDDEN, "landlord_role_required");
         }
         PropertyEntity p = new PropertyEntity();
@@ -112,7 +112,7 @@ public class PropertyService {
         p.setAvailability(req.availability() != null ? req.availability() : PropertyAvailability.available);
         p.setPhone(req.phone());
         p.setContactEmail(req.contactEmail());
-        p.setApproved(user.getRole() == UserRole.admin || user.getRole() == UserRole.agent); // Auto-approve if agent/admin
+        p.setApproved(true);
         p.setNeedsImages(true);
         if (user.getRole() == UserRole.agent) {
             p.setRegisteredByAgent(user);

@@ -1,6 +1,7 @@
 package com.collincorp.houserental.entity;
 
 import com.collincorp.houserental.domain.LandlordRequestStatus;
+import com.collincorp.houserental.domain.LandlordRequestType;
 import jakarta.persistence.*;
 import java.time.Instant;
 
@@ -30,6 +31,10 @@ public class LandlordRequestEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private LandlordRequestStatus status = LandlordRequestStatus.pending;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_type", nullable = false, length = 32)
+    private LandlordRequestType requestType = LandlordRequestType.initial_landlord;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_agent_id")
@@ -103,6 +108,14 @@ public class LandlordRequestEntity {
 
     public void setStatus(LandlordRequestStatus status) {
         this.status = status;
+    }
+
+    public LandlordRequestType getRequestType() {
+        return requestType == null ? LandlordRequestType.initial_landlord : requestType;
+    }
+
+    public void setRequestType(LandlordRequestType requestType) {
+        this.requestType = requestType;
     }
 
     public UserEntity getAssignedAgent() {

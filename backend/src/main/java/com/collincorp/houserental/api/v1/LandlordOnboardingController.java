@@ -25,6 +25,11 @@ public class LandlordOnboardingController {
         return ResponseEntity.ok(onboardingService.submitJoinRequest(dto));
     }
 
+    @PostMapping("/additional-property")
+    public ResponseEntity<LandlordRequestResponse> submitAdditionalPropertyRequest(@Valid @RequestBody AdditionalPropertyRequestDto dto) {
+        return ResponseEntity.ok(onboardingService.submitAdditionalPropertyRequest(dto));
+    }
+
     @PostMapping("/verify")
     public ResponseEntity<String> verifyLandlordEmail(@RequestBody VerificationRequest request) {
         onboardingService.verifyLandlordEmail(request.getEmail(), request.getCode());
