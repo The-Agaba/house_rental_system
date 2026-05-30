@@ -57,9 +57,10 @@ public class LandlordOnboardingController {
     public ResponseEntity<LandlordRequestResponse> uploadDocument(
             @PathVariable Long id,
             @RequestParam("documentType") String documentType,
+            @RequestParam(value = "requestPropertyId", required = false) Long requestPropertyId,
             @RequestParam("file") MultipartFile file) {
         UserEntity agent = SecurityUtils.currentUser();
-        return ResponseEntity.ok(onboardingService.uploadDocument(id, documentType, file, agent.getId()));
+        return ResponseEntity.ok(onboardingService.uploadDocument(id, documentType, file, agent.getId(), requestPropertyId));
     }
 
     @PutMapping("/{id}/approve")

@@ -8,5 +8,7 @@ public record LandlordDocumentResponse(
         String documentType,
         String filePath,
         Long uploadedById,
+        Long requestPropertyId,
+        String requestPropertyTitle,
         Instant uploadedAt
 ) {}

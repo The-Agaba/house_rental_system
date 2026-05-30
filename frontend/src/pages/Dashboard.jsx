@@ -783,7 +783,10 @@ const Dashboard = () => {
 
   const handleOpenApprovalModal = (request) => {
     setApprovingRequest(request);
-    setApprovedProperties([{ title: '', location: '' }]);
+    setApprovedProperties((request.properties || []).map(property => ({
+      title: property.title,
+      location: property.location
+    })));
     setApprovalNotes('Verified proof of ownership. Approved.');
     setApprovalModalOpen(true);
   };
@@ -791,31 +794,31 @@ const Dashboard = () => {
   const handleModalApproveSubmit = async (e) => {
     e.preventDefault();
     if (!approvingRequest) return;
-    const hasOwnershipDocument = approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'OWNERSHIP');
+    const claimedProperties = approvingRequest.properties || [];
     const hasTinDocument = approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'TIN');
-    if (!hasOwnershipDocument || !hasTinDocument) {
-      toast.error('Upload both OWNERSHIP and TIN documents before approval.');
-      return;
-    }
-    if (approvedProperties.some(p => !p.title.trim() || !p.location.trim())) {
-      toast.error('Please fill in title and location for all properties.');
+    const allClaimsHaveOwnership = claimedProperties.length > 0 && claimedProperties.every(property =>
+      approvingRequest.documents?.some(doc =>
+        doc.documentType?.toUpperCase() === 'OWNERSHIP' && String(doc.requestPropertyId) === String(property.id)
+      )
+    );
+    if (!hasTinDocument || !allClaimsHaveOwnership) {
+      toast.error('Upload the TIN document and one ownership document for each claimed property before approval.');
       return;
     }
 
     setSubmittingApproval(true);
     try {
       await axios.put(`/landlord-requests/${approvingRequest.id}/approve`, {
-        notes: approvalNotes,
-        properties: approvedProperties
+        notes: approvalNotes
       });
-      toast.success('Landlord approved, properties registered, and activation email queued.');
+      toast.success('Landlord approved, claimed properties saved as pending listings, and activation email queued.');
       setApprovalModalOpen(false);
       setApprovingRequest(null);
       fetchDashboardData();
     } catch (err) {
       const errorKey = err.response?.data?.message || err.response?.data?.error;
       toast.error(errorKey === 'missing_required_documents'
-        ? 'Upload both OWNERSHIP and TIN documents before approval.'
+        ? 'Upload the TIN document and one ownership document for each claimed property before approval.'
         : errorKey || 'Failed to approve landlord request');
     } finally {
       setSubmittingApproval(false);
@@ -1890,7 +1893,7 @@ const Dashboard = () => {
 
                             {request.status !== 'approved' && request.status !== 'rejected' && (
                               <div className="w-full xl:w-[36rem] shrink-0">
-                                <DocumentUploader requestId={request.id} onUploadSuccess={fetchDashboardData} />
+                                <DocumentUploader requestId={request.id} properties={request.properties || []} onUploadSuccess={fetchDashboardData} />
                               </div>
                             )}
                           </div>
@@ -1899,6 +1902,38 @@ const Dashboard = () => {
                         <div className="px-6 md:px-8 py-5 bg-slate-50/70 dark:bg-slate-900/20 space-y-5">
                           <div className={`p-4 rounded-2xl border text-sm leading-relaxed font-semibold ${prompt.color}`}>
                             {prompt.text}
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Claimed Properties</p>
+                            {request.properties?.length > 0 ? (
+                              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {request.properties.map(property => {
+                                  const hasDoc = request.documents?.some(doc =>
+                                    doc.documentType?.toUpperCase() === 'OWNERSHIP' && String(doc.requestPropertyId) === String(property.id)
+                                  );
+                                  return (
+                                    <div key={property.id} className="rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words">{property.title}</p>
+                                          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400 break-words">{property.location}</p>
+                                        </div>
+                                        <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider ${
+                                          hasDoc ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
+                                        }`}>
+                                          {hasDoc ? 'Doc linked' : 'Needs doc'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-sm text-slate-400 dark:text-slate-500 font-medium">
+                                No claimed properties were submitted.
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -1913,7 +1948,9 @@ const Dashboard = () => {
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-500/30 transition-all shadow-sm"
                                   >
-                                    <span className="truncate">{doc.documentType}</span>
+                                    <span className="truncate">
+                                      {doc.documentType}{doc.requestPropertyTitle ? ` - ${doc.requestPropertyTitle}` : ''}
+                                    </span>
                                     <span className="text-[10px] uppercase tracking-widest text-slate-400 shrink-0">Open</span>
                                   </a>
                                 ))}
@@ -2253,53 +2290,25 @@ const Dashboard = () => {
 
               <form onSubmit={handleModalApproveSubmit} className="p-6 space-y-6">
                 <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 text-xs font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
-                  Approval creates the landlord account, registers the listed properties, and sends a saved notification/email containing the activation code and temporary password.
+                  Approval creates the landlord account and converts the claimed properties into pending listings. They stay hidden until the landlord completes prices, rooms, images, and an agent or admin approves each property.
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between gap-3 mb-3">
-                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Verified properties</label>
-                    <button
-                      type="button"
-                      onClick={() => setApprovedProperties(items => [...items, { title: '', location: '' }])}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-primary-600 dark:text-primary-400"
-                    >
-                      <Plus size={14} /> Add Property
-                    </button>
+                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Claimed properties to create as pending listings</label>
                   </div>
 
                   <div className="space-y-3">
                     {approvedProperties.map((property, index) => (
-                      <div key={index} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                        <input
-                          type="text"
-                          required
-                          className="input-field text-sm"
-                          placeholder="Property title"
-                          value={property.title}
-                          onChange={(e) => setApprovedProperties(items => items.map((item, itemIndex) => (
-                            itemIndex === index ? { ...item, title: e.target.value } : item
-                          )))}
-                        />
-                        <input
-                          type="text"
-                          required
-                          className="input-field text-sm"
-                          placeholder="Property location"
-                          value={property.location}
-                          onChange={(e) => setApprovedProperties(items => items.map((item, itemIndex) => (
-                            itemIndex === index ? { ...item, location: e.target.value } : item
-                          )))}
-                        />
-                        <button
-                          type="button"
-                          disabled={approvedProperties.length === 1}
-                          onClick={() => setApprovedProperties(items => items.filter((_, itemIndex) => itemIndex !== index))}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-red-600 disabled:opacity-40"
-                          aria-label="Remove property"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <div key={index} className="grid gap-3 sm:grid-cols-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 p-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Property title</p>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 break-words">{property.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Location</p>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 break-words">{property.location}</p>
+                        </div>
                       </div>
                     ))}
                   </div>

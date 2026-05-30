@@ -17,6 +17,20 @@ const LandlordJoinRequest = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const errorMessages = {
+    email_taken: 'This email is already registered. Please log in instead, or use another email for the landlord request.',
+    pending_request_exists: 'A landlord request already exists for this email and is still being reviewed.',
+    property_claim_required: 'Add at least one property name and location before submitting.',
+    validation_failed: 'Please check the highlighted details and try again.',
+    unexpected_error: 'Something went wrong while submitting. Please try again in a moment.'
+  };
+
+  const getErrorMessage = (err) => {
+    const data = err.response?.data;
+    const key = data?.error || data?.message;
+    return errorMessages[key] || key || 'Failed to submit application. Please try again.';
+  };
+
   const setField = (key, val) => {
     setForm(f => ({ ...f, [key]: val }));
   };
@@ -53,8 +67,7 @@ const LandlordJoinRequest = () => {
       setSuccess(true);
       toast.success('Join request submitted successfully!');
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Failed to submit application. Please try again.';
-      toast.error(errMsg);
+      toast.error(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -263,7 +276,7 @@ const LandlordJoinRequest = () => {
 
             {/* Note */}
             <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-100/70 dark:border-amber-900/30 text-[11px] text-amber-800 dark:text-amber-400 leading-relaxed font-medium">
-              💡 <strong>Note on Verification:</strong> Your submitted TRA TIN and ownership titles must match your physical documents. The assigned verified RentHub agent will physically verify these before granting dashboard access.
+              <strong>Verification note:</strong> Your submitted TRA TIN and property ownership titles must match your physical documents. Each claimed property will stay hidden until you complete its listing details and an agent approves it.
             </div>
 
             {/* Submit */}

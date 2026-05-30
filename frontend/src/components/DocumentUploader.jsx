@@ -3,9 +3,10 @@ import { Upload, FileText, Loader2, Check } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const DocumentUploader = ({ requestId, onUploadSuccess }) => {
+const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [docType, setDocType] = useState('OWNERSHIP'); // 'OWNERSHIP', 'TIN', 'OTHER'
+  const [requestPropertyId, setRequestPropertyId] = useState(properties[0]?.id || '');
   const [uploading, setUploading] = useState(false);
   const fileInputId = `verification-doc-${requestId}`;
 
@@ -21,11 +22,18 @@ const DocumentUploader = ({ requestId, onUploadSuccess }) => {
       toast.error('Please select a file to upload first.');
       return;
     }
+    if (docType === 'OWNERSHIP' && properties.length > 0 && !requestPropertyId) {
+      toast.error('Choose the property this ownership document belongs to.');
+      return;
+    }
 
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('documentType', docType);
+    if (docType === 'OWNERSHIP' && requestPropertyId) {
+      formData.append('requestPropertyId', requestPropertyId);
+    }
 
     try {
       const res = await axios.post(`/landlord-requests/${requestId}/documents`, formData, {
@@ -95,6 +103,25 @@ const DocumentUploader = ({ requestId, onUploadSuccess }) => {
           </div>
         </div>
       </div>
+
+      {docType === 'OWNERSHIP' && properties.length > 0 && (
+        <div>
+          <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-2 ml-1">Property This Document Verifies</label>
+          <select
+            className="input-field text-sm"
+            value={requestPropertyId}
+            onChange={(e) => setRequestPropertyId(e.target.value)}
+            required
+          >
+            <option value="">Select claimed property</option>
+            {properties.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.title} - {property.location}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Submit Button */}
       <button

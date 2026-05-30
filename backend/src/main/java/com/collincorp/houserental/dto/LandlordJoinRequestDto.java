@@ -2,6 +2,8 @@ package com.collincorp.houserental.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -11,5 +13,5 @@ public record LandlordJoinRequestDto(
         @NotBlank @Size(max = 20) String requesterPhone,
         @NotBlank @Size(max = 255) String locality,
         @NotBlank @Size(max = 50) String tinNumber,
-        List<PropertyRegistrationDto> properties
+        @NotEmpty List<@Valid PropertyRegistrationDto> properties
 ) {}

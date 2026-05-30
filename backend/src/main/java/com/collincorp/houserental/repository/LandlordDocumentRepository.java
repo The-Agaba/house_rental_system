@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LandlordDocumentRepository extends JpaRepository<LandlordDocumentEntity, Long> {
     List<LandlordDocumentEntity> findByLandlordRequestId(Long requestId);
+    boolean existsByLandlordRequestIdAndRequestPropertyIdAndDocumentTypeIgnoreCase(Long requestId, Long requestPropertyId, String documentType);
 }

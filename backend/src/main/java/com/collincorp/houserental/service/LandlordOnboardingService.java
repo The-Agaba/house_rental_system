@@ -8,15 +8,16 @@ import com.collincorp.houserental.domain.UserRole;
 import com.collincorp.houserental.dto.*;
 import com.collincorp.houserental.entity.LandlordDocumentEntity;
 import com.collincorp.houserental.entity.LandlordRequestEntity;
+import com.collincorp.houserental.entity.LandlordRequestPropertyEntity;
 import com.collincorp.houserental.entity.PropertyEntity;
 import com.collincorp.houserental.entity.UserEntity;
 import com.collincorp.houserental.repository.LandlordDocumentRepository;
 import com.collincorp.houserental.repository.LandlordRequestRepository;
+import com.collincorp.houserental.repository.LandlordRequestPropertyRepository;
 import com.collincorp.houserental.repository.PropertyRepository;
 import com.collincorp.houserental.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class LandlordOnboardingService {
 
     private final LandlordRequestRepository landlordRequestRepository;
     private final LandlordDocumentRepository landlordDocumentRepository;
+    private final LandlordRequestPropertyRepository landlordRequestPropertyRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final EmailVerificationService emailVerificationService;
@@ -42,6 +44,7 @@ public class LandlordOnboardingService {
     public LandlordOnboardingService(
             LandlordRequestRepository landlordRequestRepository,
             LandlordDocumentRepository landlordDocumentRepository,
+            LandlordRequestPropertyRepository landlordRequestPropertyRepository,
             UserRepository userRepository,
             PropertyRepository propertyRepository,
             EmailVerificationService emailVerificationService,
@@ -51,6 +54,7 @@ public class LandlordOnboardingService {
             LogService logService) {
         this.landlordRequestRepository = landlordRequestRepository;
         this.landlordDocumentRepository = landlordDocumentRepository;
+        this.landlordRequestPropertyRepository = landlordRequestPropertyRepository;
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.emailVerificationService = emailVerificationService;
@@ -69,14 +73,15 @@ public class LandlordOnboardingService {
             throw new ApiException(HttpStatus.CONFLICT, "email_taken");
         }
 
-        // 2. Check if there is already a pending request for this email
-        landlordRequestRepository.findByRequesterEmailIgnoreCase(email).ifPresent(req -> {
-            if (req.getStatus() == LandlordRequestStatus.pending || 
-                req.getStatus() == LandlordRequestStatus.assigned ||
-                req.getStatus() == LandlordRequestStatus.verified) {
-                throw new ApiException(HttpStatus.CONFLICT, "pending_request_exists");
-            }
-        });
+        // 2. Check if there is already an active request for this email.
+        boolean hasActiveRequest = landlordRequestRepository.findByRequesterEmailIgnoreCase(email)
+                .stream()
+                .anyMatch(req -> req.getStatus() == LandlordRequestStatus.pending
+                        || req.getStatus() == LandlordRequestStatus.assigned
+                        || req.getStatus() == LandlordRequestStatus.verified);
+        if (hasActiveRequest) {
+            throw new ApiException(HttpStatus.CONFLICT, "pending_request_exists");
+        }
 
         // 3. Create LandlordRequestEntity
         LandlordRequestEntity entity = new LandlordRequestEntity();
@@ -87,14 +92,6 @@ public class LandlordOnboardingService {
         entity.setTinNumber(dto.tinNumber());
         entity.setStatus(LandlordRequestStatus.pending);
 
-        // Serialize properties to notes initially as history
-        if (dto.properties() != null && !dto.properties().isEmpty()) {
-            String propListStr = dto.properties().stream()
-                    .map(p -> p.title() + " at " + p.location())
-                    .collect(Collectors.joining("; "));
-            entity.setNotes("Proposed properties: " + propListStr);
-        }
-
         // 4. Find agents in locality to auto-assign
         List<UserEntity> agents = userRepository.findByRoleAndLocality(UserRole.agent, dto.locality());
         if (!agents.isEmpty()) {
@@ -103,6 +100,20 @@ public class LandlordOnboardingService {
         }
 
         landlordRequestRepository.save(entity);
+
+        List<PropertyRegistrationDto> submittedProperties = dto.properties() == null ? List.of() : dto.properties();
+        if (submittedProperties.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "property_claim_required");
+        }
+        for (PropertyRegistrationDto pDto : submittedProperties) {
+            LandlordRequestPropertyEntity claim = new LandlordRequestPropertyEntity();
+            claim.setLandlordRequest(entity);
+            claim.setTitle(pDto.title().trim());
+            claim.setLocation(pDto.location().trim());
+            claim.setApproved(false);
+            landlordRequestPropertyRepository.save(claim);
+        }
+
         logService.log(LogAction.LANDLORD_REQUEST_CREATED, "landlord_request", entity.getId(), null, email, "Landlord request submitted");
 
         if (entity.getAssignedAgent() != null) {
@@ -149,12 +160,24 @@ public class LandlordOnboardingService {
     }
 
     @Transactional
-    public LandlordRequestResponse uploadDocument(Long requestId, String documentType, MultipartFile file, Long agentId) {
+    public LandlordRequestResponse uploadDocument(Long requestId, String documentType, MultipartFile file, Long agentId, Long requestPropertyId) {
         LandlordRequestEntity request = landlordRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "request_not_found"));
 
         UserEntity agent = userRepository.findById(agentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "agent_not_found"));
+
+        LandlordRequestPropertyEntity requestProperty = null;
+        if (requestPropertyId != null) {
+            requestProperty = landlordRequestPropertyRepository.findById(requestPropertyId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "request_property_not_found"));
+            if (!requestProperty.getLandlordRequest().getId().equals(request.getId())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "request_property_mismatch");
+            }
+        }
+        if ("OWNERSHIP".equalsIgnoreCase(documentType) && requestProperty == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ownership_property_required");
+        }
 
         // Store file and get path
         String filePath = storageService.store(file);
@@ -164,6 +187,7 @@ public class LandlordOnboardingService {
         doc.setDocumentType(documentType);
         doc.setFilePath(filePath);
         doc.setUploadedBy(agent);
+        doc.setRequestProperty(requestProperty);
         doc.setUploadedAt(Instant.now());
         landlordDocumentRepository.save(doc);
 
@@ -189,11 +213,13 @@ public class LandlordOnboardingService {
         }
 
         List<LandlordDocumentEntity> documents = landlordDocumentRepository.findByLandlordRequestId(request.getId());
-        boolean hasOwnershipDocument = documents.stream()
-                .anyMatch(doc -> "OWNERSHIP".equalsIgnoreCase(doc.getDocumentType()));
+        List<LandlordRequestPropertyEntity> claimedProperties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdAsc(request.getId());
         boolean hasTinDocument = documents.stream()
                 .anyMatch(doc -> "TIN".equalsIgnoreCase(doc.getDocumentType()));
-        if (!hasOwnershipDocument || !hasTinDocument) {
+        boolean allClaimsHaveOwnershipDocument = claimedProperties.stream()
+                .allMatch(property -> landlordDocumentRepository.existsByLandlordRequestIdAndRequestPropertyIdAndDocumentTypeIgnoreCase(
+                        request.getId(), property.getId(), "OWNERSHIP"));
+        if (!hasTinDocument || claimedProperties.isEmpty() || !allClaimsHaveOwnershipDocument) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "missing_required_documents");
         }
 
@@ -213,25 +239,22 @@ public class LandlordOnboardingService {
         landlord.setCreatedBy(agent.getId());
         userRepository.save(landlord);
 
-        // 2. Register Skeletal Properties
-        List<PropertyRegistrationDto> propsToRegister = dto.properties();
-        if (propsToRegister == null) {
-            propsToRegister = new ArrayList<>();
-        }
-
-        for (PropertyRegistrationDto pDto : propsToRegister) {
+        // 2. Register the properties the landlord claimed, but keep them hidden until listing details are complete.
+        for (LandlordRequestPropertyEntity pDto : claimedProperties) {
             PropertyEntity prop = new PropertyEntity();
             prop.setLandlord(landlord);
-            prop.setTitle(pDto.title());
-            prop.setLocation(pDto.location());
+            prop.setTitle(pDto.getTitle());
+            prop.setLocation(pDto.getLocation());
             prop.setPricePerMonth(BigDecimal.ZERO); // skeletal properties have price = 0
             prop.setRooms(0);
             prop.setNeedsImages(true);
             prop.setRegisteredByAgent(agent);
-            prop.setApproved(true); // Agent approves immediately on registration
+            prop.setApproved(false);
             prop.setPhone(request.getRequesterPhone());
             prop.setContactEmail(request.getRequesterEmail());
             propertyRepository.save(prop);
+            pDto.setCreatedPropertyId(prop.getId());
+            landlordRequestPropertyRepository.save(pDto);
             
             logService.log(LogAction.PROPERTY_CREATED, "property", prop.getId(), agent.getId(), request.getRequesterEmail(), "Skeletal property registered by agent: " + prop.getTitle());
         }
@@ -335,6 +358,17 @@ public class LandlordOnboardingService {
     }
 
     public LandlordRequestResponse toResponse(LandlordRequestEntity entity) {
+        List<LandlordRequestPropertyResponse> properties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdAsc(entity.getId())
+                .stream()
+                .map(p -> new LandlordRequestPropertyResponse(
+                        p.getId(),
+                        p.getTitle(),
+                        p.getLocation(),
+                        p.isApproved(),
+                        p.getCreatedPropertyId()
+                ))
+                .collect(Collectors.toList());
+
         List<LandlordDocumentResponse> docs = landlordDocumentRepository.findByLandlordRequestId(entity.getId())
                 .stream()
                 .map(d -> new LandlordDocumentResponse(
@@ -343,6 +377,8 @@ public class LandlordOnboardingService {
                         d.getDocumentType(),
                         d.getFilePath(),
                         d.getUploadedBy() != null ? d.getUploadedBy().getId() : null,
+                        d.getRequestProperty() != null ? d.getRequestProperty().getId() : null,
+                        d.getRequestProperty() != null ? d.getRequestProperty().getTitle() : null,
                         d.getUploadedAt()
                 ))
                 .collect(Collectors.toList());
@@ -361,6 +397,7 @@ public class LandlordOnboardingService {
                 entity.getNotes(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
+                properties,
                 docs
         );
     }

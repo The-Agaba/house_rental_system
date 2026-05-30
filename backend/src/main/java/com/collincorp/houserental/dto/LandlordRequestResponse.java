@@ -18,5 +18,6 @@ public record LandlordRequestResponse(
         String notes,
         Instant createdAt,
         Instant updatedAt,
+        List<LandlordRequestPropertyResponse> properties,
         List<LandlordDocumentResponse> documents
 ) {}

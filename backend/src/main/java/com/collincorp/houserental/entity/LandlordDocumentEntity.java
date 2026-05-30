@@ -25,6 +25,10 @@ public class LandlordDocumentEntity {
     @JoinColumn(name = "uploaded_by_id")
     private UserEntity uploadedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_property_id")
+    private LandlordRequestPropertyEntity requestProperty;
+
     @Column(name = "uploaded_at", nullable = false)
     private Instant uploadedAt = Instant.now();
 
@@ -62,6 +66,14 @@ public class LandlordDocumentEntity {
 
     public void setUploadedBy(UserEntity uploadedBy) {
         this.uploadedBy = uploadedBy;
+    }
+
+    public LandlordRequestPropertyEntity getRequestProperty() {
+        return requestProperty;
+    }
+
+    public void setRequestProperty(LandlordRequestPropertyEntity requestProperty) {
+        this.requestProperty = requestProperty;
     }
 
     public Instant getUploadedAt() {
