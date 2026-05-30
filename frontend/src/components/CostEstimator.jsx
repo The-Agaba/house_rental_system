@@ -1,4 +1,4 @@
-import { DollarSign } from 'lucide-react';
+import { Banknote } from 'lucide-react';
 import { formatTzs } from '../utils/currency';
 
 const CostEstimator = ({ pricePerMonth, durationMonths, onDurationChange }) => {
@@ -61,7 +61,7 @@ const CostEstimator = ({ pricePerMonth, durationMonths, onDurationChange }) => {
         <div className="flex justify-between items-center pt-2">
           <span className="text-xs font-bold text-slate-950 dark:text-white">Estimated Total Cost</span>
           <span className="text-lg font-mono font-extrabold text-primary-600 dark:text-primary-400 inline-flex items-center">
-            <DollarSign size={18} className="-mr-0.5" /> {formatTzs(estimatedTotal)}
+            <Banknote size={18} className="-mr-0.5" /> {formatTzs(estimatedTotal)}
           </span>
         </div>
       </div>

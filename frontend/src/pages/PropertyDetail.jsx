@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
-  MapPin, Bed, DollarSign, ShieldCheck, ChevronLeft,
+  MapPin, Bed, Banknote, ShieldCheck, ChevronLeft,
   Star, CheckCircle2, Shield, Share2, Heart,
   Maximize2, Loader2, Wifi, Car, Trees, Wind, ListOrdered
 } from 'lucide-react';
@@ -191,7 +191,7 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-8 border-y border-slate-100 dark:border-slate-800">
               {[
                 { label: 'Bedrooms',   value: property.rooms,   icon: Bed         },
-                { label: 'Monthly',    value: formatTzs(property.pricePerMonth), icon: DollarSign },
+                { label: 'Monthly',    value: formatTzs(property.pricePerMonth), icon: Banknote },
                 { label: 'Queue',      value: property.bookingCount || 0, icon: ListOrdered },
                 { label: 'Rating',     value: '4.9 / 5',        icon: Star        },
               ].map(({ label, value, icon: Icon }) => (

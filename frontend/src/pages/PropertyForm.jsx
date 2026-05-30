@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  ArrowLeft, Building2, MapPin, DollarSign, Bed, 
+  ArrowLeft, Building2, MapPin, Bed, 
   Image as ImageIcon, X, Plus, Loader2, Save, Sparkles,
   Info, CheckCircle2, ShieldCheck
 } from 'lucide-react';
@@ -235,12 +235,14 @@ const PropertyForm = () => {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Monthly Rent (TZS)</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-600" size={18} />
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-600 text-xs font-extrabold tracking-widest">
+                        TZS
+                      </span>
                       <input 
                         required
                         type="number" 
                         placeholder="2400"
-                        className="input-field !rounded-2xl !pl-10"
+                        className="input-field !rounded-2xl !pl-16"
                         value={formData.pricePerMonth}
                         onChange={(e) => setFormData({...formData, pricePerMonth: e.target.value})}
                       />

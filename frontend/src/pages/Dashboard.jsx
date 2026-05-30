@@ -6,7 +6,7 @@ import {
   Building2, Calendar, Trash2, Edit3, Plus, 
   MapPin, Loader2, AlertCircle, Home,
   TrendingUp, Users, ShieldAlert, ChevronRight, Settings,
-  ArrowUpRight, Clock, Star, ShieldCheck, DollarSign, Percent, 
+  ArrowUpRight, Clock, Star, ShieldCheck, Percent, 
   Activity, CheckCircle2, User, KeyRound, Mail, Sparkles, HelpCircle,
   Menu, X, LogOut, ChevronDown, Award, Search, Play, Pause, Square,
   Sun, Moon
