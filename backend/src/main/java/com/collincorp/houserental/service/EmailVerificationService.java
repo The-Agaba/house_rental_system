@@ -31,6 +31,16 @@ public class EmailVerificationService {
         this.mailSender = mailSender;
     }
 
+    private void sendEmail(String email, String subject, String text) {
+        String cleanEmail = email.trim().toLowerCase();
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject(subject);
+        message.setText(text);
+        mailSender.send(message);
+    }
+
     public String generateLandlordVerificationCode(String email) {
         String cleanEmail = email.trim().toLowerCase();
         String code = String.format("%06d", new Random().nextInt(1000000));
@@ -42,17 +52,35 @@ public class EmailVerificationService {
         String cleanEmail = email.trim().toLowerCase();
         String code = generateLandlordVerificationCode(cleanEmail);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(senderEmail);
-        message.setTo(cleanEmail);
-        message.setSubject("Verify Your Landlord Account - RentHub");
-        message.setText("Congratulations! Your landlord registration request on RentHub has been approved.\n\n" +
-                "To verify your email and activate your account, please use the following OTP code: " + code + "\n\n" +
-                "Once verified, you will be able to log in, complete your profile, and upload images for your registered properties.\n\n" +
-                "Welcome to RentHub!");
-        mailSender.send(message);
+        sendEmail(cleanEmail,
+                "Verify Your Landlord Account - RentHub",
+                "Congratulations! Your landlord registration request on RentHub has been approved.\n\n" +
+                        "To verify your email and activate your account, please use the following OTP code: " + code + "\n\n" +
+                        "Once verified, you will be able to log in, complete your profile, and upload images for your registered properties.\n\n" +
+                        "Welcome to RentHub!");
     }
 
+    public void sendLandlordRequestMessage(String email, String locality) {
+        sendEmail(email,
+                "🏠 Landlord Registration Request Received - Action Required",
+                "Dear Landlord,\n\n" +
+                        "✅ Congratulations! Your landlord registration request for **" + locality + "** has been successfully received.\n\n" +
+                        "📋 To complete your registration, please visit our **" + locality + " Central Office** with the following documents:\n\n" +
+                        "📍 Required Documents:\n" +
+                        "1️⃣ National ID (NIDA)\n" +
+                        "2️⃣ Property Ownership Document\n" +
+                        "3️⃣ Tax Identification Number (TIN)\n\n" +
+                        "🕒 Our Office Hours:\n" +
+                        "• Monday - Sunday: 08:00 AM - 06:00 PM\n" +
+                        "• Including weekends (Saturday & Sunday)\n\n" +
+                        "📍 Office Location:\n" +
+                        locality + " Central Office\n\n" +
+                        "⚠️ Important: Please bring ALL original documents for verification.\n\n" +
+                        "We look forward to serving you!\n\n" +
+                        "Best regards,\n" +
+                        "House Rental Management Team 🏢"
+        );
+    }
     public boolean verifyLandlordCode(String email, String code) {
         String cleanEmail = email.trim().toLowerCase();
         if (landlordVerificationCodes.containsKey(cleanEmail) && landlordVerificationCodes.get(cleanEmail).equals(code)) {

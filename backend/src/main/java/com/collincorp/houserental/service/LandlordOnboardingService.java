@@ -103,15 +103,7 @@ public class LandlordOnboardingService {
 
         landlordRequestRepository.save(entity);
 
-        //send email to show the locality to go
-        emailVerificationService.sendLandlordVerificationEmail("Hello Dear User Please Visit Your Agent At Your Locality "+dto.locality()+""+"Central office"+"\n"+
-                 "Please go with Your full Identification Documents \n"+
-                "1.Your NIDA \n"+" " +
-                        "2. Your TIN number \n"+""+
-                "3. Your Ownership Document of Your properties(s)"+"\n"+" "+
-                " Our office are open Monday to Sunday from 08:00 up to 18:00"
-
-                );
+        emailVerificationService.sendLandlordRequestMessage(email, dto.locality());
 
         List<PropertyRegistrationDto> submittedProperties = dto.properties() == null ? List.of() : dto.properties();
         if (submittedProperties.isEmpty()) {
