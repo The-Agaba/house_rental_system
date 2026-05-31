@@ -451,6 +451,7 @@ const Dashboard = () => {
   const [approvedProperties, setApprovedProperties] = useState([{ title: '', location: '' }]);
   const [approvalNotes, setApprovalNotes] = useState('Verified proof of ownership. Approved.');
   const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [resendingVerificationId, setResendingVerificationId] = useState(null);
 
   // User management modal states
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -919,6 +920,21 @@ const Dashboard = () => {
       fetchDashboardData();
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to reject landlord request');
+    }
+  };
+
+  const handleResendLandlordVerification = async (request) => {
+    setResendingVerificationId(request.id);
+    try {
+      await axios.post(`/landlord-requests/${request.id}/resend-verification`);
+      toast.success('Verification email resent to the landlord.');
+    } catch (err) {
+      const errorKey = err.response?.data?.message || err.response?.data?.error;
+      toast.error(errorKey === 'email_already_verified'
+        ? 'This landlord has already verified their email.'
+        : errorKey || 'Failed to resend verification email');
+    } finally {
+      setResendingVerificationId(null);
     }
   };
 
@@ -2106,6 +2122,24 @@ const Dashboard = () => {
                               </button>
                               <button onClick={() => handleOpenApprovalModal(request)} className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold">
                                 Approve Request
+                              </button>
+                            </div>
+                          )}
+                          {request.status === 'approved' && request.requestType !== 'additional_property' && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-5 border-t border-slate-200/70 dark:border-slate-800">
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                If the landlord did not receive the activation email, resend a fresh verification code.
+                              </p>
+                              <button
+                                onClick={() => handleResendLandlordVerification(request)}
+                                disabled={resendingVerificationId === request.id}
+                                className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold"
+                              >
+                                {resendingVerificationId === request.id ? (
+                                  <><Loader2 className="animate-spin" size={16} /> Resending...</>
+                                ) : (
+                                  <><Mail size={16} /> Resend Verification Email</>
+                                )}
                               </button>
                             </div>
                           )}

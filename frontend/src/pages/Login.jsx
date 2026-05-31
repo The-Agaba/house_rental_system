@@ -16,8 +16,8 @@ const Login = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const userData = await login(email, password);
+      navigate(userData.role === 'tenant' ? '/properties' : '/dashboard');
     } catch {
       // toast handled in context
     } finally {

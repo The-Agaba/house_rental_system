@@ -20,11 +20,13 @@ import Manual from './pages/Manual';
 import LandlordJoinRequest from './pages/LandlordJoinRequest';
 import LandlordEmailVerify from './pages/LandlordEmailVerify';
 
+const defaultRouteForRole = (role) => (role === 'tenant' ? '/properties' : '/dashboard');
+
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
+  if (roles && !roles.includes(user.role)) return <Navigate to={defaultRouteForRole(user.role)} />;
   return children;
 };
 
@@ -43,7 +45,7 @@ function AppRoutes() {
       
       {/* Protected Routes */}
       <Route path="/dashboard" element={
-        <ProtectedRoute>
+        <ProtectedRoute roles={['landlord', 'admin', 'agent']}>
           <Dashboard />
         </ProtectedRoute>
       } />

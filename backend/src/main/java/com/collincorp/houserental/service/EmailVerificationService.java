@@ -48,6 +48,7 @@ public class EmailVerificationService {
         message.setSubject("Verify Your Landlord Account - RentHub");
         message.setText("Congratulations! Your landlord registration request on RentHub has been approved.\n\n" +
                 "To verify your email and activate your account, please use the following OTP code: " + code + "\n\n" +
+                "To activate your account, visit the RentHub home page and open the Verify Code menu. Enter your email, OTP code, and choose a new password before logging in.\n\n" +
                 "Once verified, you will be able to log in, complete your profile, and upload images for your registered properties.\n\n" +
                 "Welcome to RentHub!");
         mailSender.send(message);

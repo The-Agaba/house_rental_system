@@ -368,15 +368,60 @@ public class LandlordOnboardingService {
                     landlord.getId(),
                     NotificationType.LANDLORD_REQUEST_UPDATE,
                     "Welcome to RentHub! Account Approved",
-                    "Your landlord request has been approved.\n\n" +
-                    "Your activation code is: " + verificationCode + "\n" +
-                    "Your temporary password is: " + tempPassword + "\n\n" +
-                    "Open the landlord verification page, verify your email, and choose a new password before logging in.",
+                    buildLandlordActivationMessage(verificationCode, tempPassword),
                     request.getId()
             );
         }
 
         return toResponse(request);
+    }
+
+    @Transactional
+    public void resendLandlordVerificationEmail(Long requestId, Long actorId) {
+        UserEntity actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user_not_found"));
+        if (actor.getRole() != UserRole.admin && actor.getRole() != UserRole.agent) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "staff_role_required");
+        }
+
+        LandlordRequestEntity request = landlordRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "request_not_found"));
+        if (request.getRequestType() != LandlordRequestType.initial_landlord) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "initial_landlord_required");
+        }
+        if (request.getStatus() != LandlordRequestStatus.approved || request.getCreatedLandlord() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "landlord_not_approved");
+        }
+
+        UserEntity landlord = userRepository.findById(request.getCreatedLandlord().getId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "landlord_not_found"));
+        if (landlord.isEmailVerified()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "email_already_verified");
+        }
+
+        String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
+        notificationService.sendNotification(
+                landlord.getId(),
+                NotificationType.LANDLORD_REQUEST_UPDATE,
+                "RentHub Landlord Verification Code",
+                buildLandlordActivationMessage(verificationCode, null),
+                request.getId()
+        );
+        logService.log(LogAction.NOTIFICATION_SENT, "landlord_request", request.getId(), actor.getId(), landlord.getEmail(), "Landlord verification email resent by staff");
+    }
+
+    private String buildLandlordActivationMessage(String verificationCode, String tempPassword) {
+        StringBuilder message = new StringBuilder();
+        message.append("Your landlord request has been approved.\n\n")
+                .append("Your activation code is: ").append(verificationCode).append("\n");
+        if (tempPassword != null && !tempPassword.isBlank()) {
+            message.append("Your temporary password is: ").append(tempPassword).append("\n");
+        }
+        message.append("\n")
+                .append("To activate your account, visit the RentHub home page and open the Verify Code menu. ")
+                .append("Enter your email, activation code, and choose a new password before logging in.\n\n")
+                .append("After activation, log in to your landlord dashboard to complete your property details and upload listing images.");
+        return message.toString();
     }
 
     @Transactional

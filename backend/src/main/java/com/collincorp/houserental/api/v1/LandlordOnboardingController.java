@@ -76,6 +76,13 @@ public class LandlordOnboardingController {
         return ResponseEntity.ok(onboardingService.approveLandlord(id, dto, agent.getId()));
     }
 
+    @PostMapping("/{id}/resend-verification")
+    public ResponseEntity<String> resendVerificationEmail(@PathVariable Long id) {
+        UserEntity actor = SecurityUtils.currentUser();
+        onboardingService.resendLandlordVerificationEmail(id, actor.getId());
+        return ResponseEntity.ok("Landlord verification email resent successfully.");
+    }
+
     @PutMapping("/{id}/reject")
     public ResponseEntity<LandlordRequestResponse> rejectRequest(
             @PathVariable Long id,

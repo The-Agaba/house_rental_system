@@ -96,12 +96,14 @@ const Navbar = () => {
 
             {user ? (
               <div className="flex items-center gap-3">
-                <Link
-                  to="/dashboard"
-                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors shrink-0 ${isActive('/dashboard') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
-                >
-                  <LayoutDashboard size={16} /> Dashboard
-                </Link>
+                {user.role !== 'tenant' && (
+                  <Link
+                    to="/dashboard"
+                    className={`flex items-center gap-1.5 text-sm font-semibold transition-colors shrink-0 ${isActive('/dashboard') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+                  >
+                    <LayoutDashboard size={16} /> Dashboard
+                  </Link>
+                )}
 
                 {user.role === 'agent' && (
                   <Link to="/properties/new" className="btn-primary !py-2 !px-4 !text-xs shrink-0">
@@ -194,10 +196,12 @@ const Navbar = () => {
 
               {user && (
                 <>
-                  <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm ${isActive('/dashboard') ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400"><LayoutDashboard size={16} /></div>
-                    Dashboard
-                  </Link>
+                  {user.role !== 'tenant' && (
+                    <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm ${isActive('/dashboard') ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400"><LayoutDashboard size={16} /></div>
+                      Dashboard
+                    </Link>
+                  )}
                   {user.role === 'agent' && (
                     <Link to="/properties/new" className="flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm text-primary-600 bg-primary-50 dark:bg-primary-900/20">
                       <div className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600"><PlusCircle size={16} /></div>
