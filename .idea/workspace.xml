@@ -5,7 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1130bfe6-f1a2-4c70-9fe1-f758a26b7a39" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,61 +53,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0000301391864455" />
-      <entry key="S2" value="1.0740939727486825" />
-      <entry key="S5" value="1.3531125494968865" />
-      <entry key="S10" value="1.5942327401758392" />
-      <entry key="S30" value="1.8407215739391463" />
-      <entry key="S60" value="1.9169087053622622" />
-      <entry key="M2" value="1.9575611990626167" />
-      <entry key="M5" value="2.038296239701168" />
-      <entry key="M10" value="3.2195050868832964" />
-      <entry key="M15" value="5.4679366486967735" />
-      <entry key="M30" value="11.848519107696985" />
-      <entry key="H1" value="18.602849004775425" />
-      <entry key="H2" value="23.56001514524667" />
-      <entry key="H4" value="26.569606204550126" />
-      <entry key="D1" value="29.39664074933165" />
-      <entry key="W1" value="29.912997855027683" />
-    </decayedCancelled>
-    <decayedSelected>
       <entry key="MS100" value="0.0" />
       <entry key="MS500" value="0.0" />
       <entry key="S2" value="0.0" />
-      <entry key="S5" value="0.0" />
-      <entry key="S10" value="0.0" />
-      <entry key="S30" value="0.0" />
-      <entry key="S60" value="0.0" />
-      <entry key="M2" value="0.0" />
-      <entry key="M5" value="0.0" />
-      <entry key="M10" value="0.0" />
-      <entry key="M15" value="0.0" />
-      <entry key="M30" value="0.0" />
-      <entry key="H1" value="0.0" />
-      <entry key="H2" value="0.0" />
-      <entry key="H4" value="0.0" />
-      <entry key="D1" value="0.0" />
-      <entry key="W1" value="0.0" />
+      <entry key="S5" value="6.89779369086401E-280" />
+      <entry key="S10" value="3.4303454357814253E-140" />
+      <entry key="S30" value="5.052024820977463E-47" />
+      <entry key="S60" value="1.0025637491663704E-23" />
+      <entry key="M2" value="4.533158806726838E-12" />
+      <entry key="M5" value="6.53964743817282E-5" />
+      <entry key="M10" value="0.033618802398910345" />
+      <entry key="M15" value="0.3352101515884599" />
+      <entry key="M30" value="3.977835874149635" />
+      <entry key="H1" value="15.076908160630845" />
+      <entry key="H2" value="30.246117033963866" />
+      <entry key="H4" value="43.185929193333166" />
+      <entry key="D1" value="58.35136570293904" />
+      <entry key="W1" value="61.46454548955001" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.000219727033641" />
+      <entry key="S2" value="1.121750533567905" />
+      <entry key="S5" value="1.430713366165989" />
+      <entry key="S10" value="1.656287563887013" />
+      <entry key="S30" value="1.8699116802331228" />
+      <entry key="S60" value="1.9734251929432371" />
+      <entry key="M2" value="2.250920915196563" />
+      <entry key="M5" value="2.902670442108662" />
+      <entry key="M10" value="3.346647712718386" />
+      <entry key="M15" value="3.5369949925227218" />
+      <entry key="M30" value="3.7535569649490483" />
+      <entry key="H1" value="3.8727949001984556" />
+      <entry key="H2" value="3.9353686842925653" />
+      <entry key="H4" value="3.9674229228573963" />
+      <entry key="D1" value="3.9945338143864038" />
+      <entry key="W1" value="3.9992182134405487" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.014884968719436526" />
-      <entry key="MS500" value="0.4310862082028703" />
-      <entry key="S2" value="0.8719237921265732" />
-      <entry key="S5" value="1.24734794173168" />
-      <entry key="S10" value="1.5315577433590044" />
-      <entry key="S30" value="1.8165432337848453" />
-      <entry key="S60" value="1.904313470756605" />
-      <entry key="M2" value="1.951128647328511" />
-      <entry key="M5" value="2.035656292992292" />
-      <entry key="M10" value="3.2179373755422978" />
-      <entry key="M15" value="5.466621808793161" />
-      <entry key="M30" value="11.847510549617256" />
-      <entry key="H1" value="18.602168377359998" />
-      <entry key="H2" value="23.559611726794856" />
-      <entry key="H4" value="26.569385573295985" />
-      <entry key="D1" value="29.39660103708" />
-      <entry key="W1" value="29.91299210542274" />
+      <entry key="MS100" value="1.101081625838705E-15" />
+      <entry key="MS500" value="0.001026446278322535" />
+      <entry key="S2" value="0.2301249562300536" />
+      <entry key="S5" value="0.8073053903694642" />
+      <entry key="S10" value="1.2610334723284387" />
+      <entry key="S30" value="1.7125530880985231" />
+      <entry key="S60" value="1.8816784861256288" />
+      <entry key="M2" value="2.1749421296476266" />
+      <entry key="M5" value="2.841615633396455" />
+      <entry key="M10" value="3.3390174775729715" />
+      <entry key="M15" value="3.8414841698441844" />
+      <entry key="M30" value="7.713667507830867" />
+      <entry key="H1" value="18.939675130421627" />
+      <entry key="H2" value="34.17595452734207" />
+      <entry key="H4" value="47.150402036621664" />
+      <entry key="D1" value="62.34537520452305" />
+      <entry key="W1" value="65.46368788868435" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -119,33 +122,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.HouseRentalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.HouseRentalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Dev/SpringBoot/GroupWorks/P1/Phase 2/house_rental_system&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.HouseRentalApplication.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.HouseRentalApplication.executor": "Run",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "Dominic",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Dev/SpringBoot/GroupWorks/P1/Phase 2/house_rental_system",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/backend" />
