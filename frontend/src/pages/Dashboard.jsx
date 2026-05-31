@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Building2, Calendar, Trash2, Edit3, Plus, 
   MapPin, Loader2, AlertCircle, Home,
-  TrendingUp, Users, ShieldAlert, ChevronRight, Settings,
+  TrendingUp, Users, ShieldAlert, ChevronRight,
   ArrowUpRight, Clock, Star, ShieldCheck, Percent, 
   Activity, CheckCircle2, User, KeyRound, Mail, Sparkles, HelpCircle,
   Menu, X, LogOut, ChevronDown, Award, Search, Play, Pause, Square,
@@ -948,7 +948,6 @@ const Dashboard = () => {
       list.push({ id: 'users', label: 'Manage Users', icon: Users });
       list.push({ id: 'logs', label: 'Audit Logs', icon: ShieldAlert });
     }
-    list.push({ id: 'settings', label: 'Settings', icon: Settings });
     return list;
   };
 
@@ -1626,12 +1625,14 @@ const Dashboard = () => {
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                             <Users size={12} className="text-primary-500" /> {prop.rooms} Rooms
                           </span>
-                          <Link
-                            to={`/properties/${prop.id}`}
-                            className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold uppercase tracking-wider hover:bg-primary-600 hover:text-white dark:hover:bg-primary-500 dark:hover:text-white transition-all shadow-sm"
-                          >
-                            View & Reserve
-                          </Link>
+                          {user.role === 'tenant' && (
+                            <Link
+                              to={`/properties/${prop.id}`}
+                              className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold uppercase tracking-wider hover:bg-primary-600 hover:text-white dark:hover:bg-primary-500 dark:hover:text-white transition-all shadow-sm"
+                            >
+                              View & Reserve
+                            </Link>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1694,7 +1695,10 @@ const Dashboard = () => {
                 )}
                 {data.properties.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {data.properties.map(prop => {
+                    {(user.role === 'admin' || user.role === 'agent'
+                      ? sortNewestFirst(data.properties)
+                      : data.properties
+                    ).map(prop => {
                       const reviewState = getPropertyReviewState(prop);
                       return (
                       <div 

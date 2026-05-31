@@ -31,6 +31,42 @@ const PropertyForm = () => {
   
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    const price = Number(formData.pricePerMonth);
+    const rooms = Number(formData.rooms);
+
+    if (formData.pricePerMonth === '' || Number.isNaN(price)) {
+      errors.pricePerMonth = 'Monthly rent is required';
+    } else if (price < 0) {
+      errors.pricePerMonth = 'Monthly rent cannot be negative';
+    } else if (price === 0) {
+      errors.pricePerMonth = 'Monthly rent must be greater than zero';
+    }
+
+    if (formData.rooms === '' || Number.isNaN(rooms)) {
+      errors.rooms = 'Number of rooms is required';
+    } else if (rooms < 0) {
+      errors.rooms = 'Number of rooms cannot be negative';
+    } else if (!Number.isInteger(rooms) || rooms === 0) {
+      errors.rooms = 'Number of rooms must be a positive whole number';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const clearFieldError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -110,6 +146,10 @@ const PropertyForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
     setSaving(true);
     try {
       let propertyId = id;
@@ -133,8 +173,14 @@ const PropertyForm = () => {
         : 'Listing published to marketplace!');
       navigate('/dashboard');
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message || 'Failed to save listing';
-      toast.error(errorMsg);
+      const apiFields = err.response?.data?.fields;
+      if (apiFields) {
+        setFieldErrors(apiFields);
+        toast.error('Please fix the highlighted fields');
+      } else {
+        const errorMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message || 'Failed to save listing';
+        toast.error(errorMsg);
+      }
     } finally {
       setSaving(false);
     }
@@ -259,13 +305,20 @@ const PropertyForm = () => {
                       </span>
                       <input 
                         required
-                        type="number" 
+                        type="number"
+                        min="1"
                         placeholder="2400"
-                        className="input-field !rounded-2xl !pl-16"
+                        className={`input-field !rounded-2xl !pl-16 ${fieldErrors.pricePerMonth ? '!border-rose-500' : ''}`}
                         value={formData.pricePerMonth}
-                        onChange={(e) => setFormData({...formData, pricePerMonth: e.target.value})}
+                        onChange={(e) => {
+                          clearFieldError('pricePerMonth');
+                          setFormData({...formData, pricePerMonth: e.target.value});
+                        }}
                       />
                     </div>
+                    {fieldErrors.pricePerMonth && (
+                      <p className="mt-2 ml-1 text-xs font-semibold text-rose-600">{fieldErrors.pricePerMonth}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Total Rooms</label>
@@ -273,13 +326,21 @@ const PropertyForm = () => {
                       <Bed className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-600" size={18} />
                       <input 
                         required
-                        type="number" 
+                        type="number"
+                        min="1"
+                        step="1"
                         placeholder="3"
-                        className="input-field !rounded-2xl !pl-12"
+                        className={`input-field !rounded-2xl !pl-12 ${fieldErrors.rooms ? '!border-rose-500' : ''}`}
                         value={formData.rooms}
-                        onChange={(e) => setFormData({...formData, rooms: e.target.value})}
+                        onChange={(e) => {
+                          clearFieldError('rooms');
+                          setFormData({...formData, rooms: e.target.value});
+                        }}
                       />
                     </div>
+                    {fieldErrors.rooms && (
+                      <p className="mt-2 ml-1 text-xs font-semibold text-rose-600">{fieldErrors.rooms}</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -6,33 +6,24 @@ import {
   Loader2, ChevronRight, LayoutGrid, List as ListIcon, X, ChevronDown
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { formatTzs } from '../utils/currency';
 
-
-/* ── Skeleton ──────────────────────────────────────────────── */
-const Skeleton = () => (
-  <div className="card animate-pulse">
-    <div className="h-56 bg-slate-200 dark:bg-slate-800" />
-    <div className="p-6 space-y-3">
-      <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-lg w-3/4" />
-      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2" />
-      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between">
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4" />
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/5" />
-      </div>
-    </div>
-  </div>
-);
+const isStaffRole = (role) => ['landlord', 'agent', 'admin'].includes(role);
 
 /* ── Property Card (Grid) ─────────────────────────────────── */
-const GridCard = ({ prop, i }) => (
+const GridCard = ({ prop, i, allowViewLink }) => {
+  const Wrapper = allowViewLink ? Link : 'div';
+  const wrapperProps = allowViewLink ? { to: `/properties/${prop.id}` } : {};
+
+  return (
   <motion.div
     key={prop.id}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.35, delay: i * 0.05 }}
   >
-    <Link to={`/properties/${prop.id}`} className="property-card group h-full block">
+    <Wrapper {...wrapperProps} className="property-card group h-full block">
       <div className="relative h-56 overflow-hidden">
         <img
           src={prop.images?.[0]?.filePath || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=800'}
@@ -65,23 +56,45 @@ const GridCard = ({ prop, i }) => (
             <Bed size={16} className="text-primary-500" />
             <span>{prop.rooms} {prop.rooms === 1 ? 'Bed' : 'Beds'}</span>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
-            <ChevronRight size={16} />
-          </div>
+          {allowViewLink && (
+            <div className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
+              <ChevronRight size={16} />
+            </div>
+          )}
         </div>
       </div>
-    </Link>
+    </Wrapper>
   </motion.div>
+  );
+};
+
+/* ── Skeleton ──────────────────────────────────────────────── */
+const Skeleton = () => (
+  <div className="card animate-pulse">
+    <div className="h-56 bg-slate-200 dark:bg-slate-800" />
+    <div className="p-6 space-y-3">
+      <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-lg w-3/4" />
+      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2" />
+      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4" />
+        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/5" />
+      </div>
+    </div>
+  </div>
 );
 
 /* ── Property Card (List) ─────────────────────────────────── */
-const ListCard = ({ prop, i }) => (
+const ListCard = ({ prop, i, allowViewLink }) => {
+  const Wrapper = allowViewLink ? Link : 'div';
+  const wrapperProps = allowViewLink ? { to: `/properties/${prop.id}` } : {};
+
+  return (
   <motion.div
     initial={{ opacity: 0, x: -16 }}
     animate={{ opacity: 1, x: 0 }}
     transition={{ duration: 0.3, delay: i * 0.04 }}
   >
-    <Link to={`/properties/${prop.id}`} className="card flex flex-col sm:flex-row hover:border-primary-400/40 hover:shadow-premium-hover transition-all duration-300 group">
+    <Wrapper {...wrapperProps} className="card flex flex-col sm:flex-row hover:border-primary-400/40 hover:shadow-premium-hover transition-all duration-300 group">
       <div className="relative w-full sm:w-64 h-52 sm:h-auto overflow-hidden shrink-0">
         <img
           src={prop.images?.[0]?.filePath || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=400'}
@@ -115,17 +128,22 @@ const ListCard = ({ prop, i }) => (
           <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
             <Bed size={16} className="text-primary-500" /> {prop.rooms} Bedrooms
           </div>
-          <span className="btn-primary !py-2 !px-5 text-sm">
-            View Details <ChevronRight size={16} />
-          </span>
+          {allowViewLink && (
+            <span className="btn-primary !py-2 !px-5 text-sm">
+              View Details <ChevronRight size={16} />
+            </span>
+          )}
         </div>
       </div>
-    </Link>
+    </Wrapper>
   </motion.div>
-);
+  );
+};
 
 /* ── Main Page ─────────────────────────────────────────────── */
 const Properties = () => {
+  const { user } = useAuth();
+  const allowViewLink = !user || !isStaffRole(user.role);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
@@ -329,11 +347,11 @@ const Properties = () => {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {properties.map((p, i) => <GridCard key={p.id} prop={p} i={i} />)}
+          {properties.map((p, i) => <GridCard key={p.id} prop={p} i={i} allowViewLink={allowViewLink} />)}
         </div>
       ) : (
         <div className="flex flex-col gap-6">
-          {properties.map((p, i) => <ListCard key={p.id} prop={p} i={i} />)}
+          {properties.map((p, i) => <ListCard key={p.id} prop={p} i={i} allowViewLink={allowViewLink} />)}
         </div>
       )}
     </div>

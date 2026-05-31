@@ -84,6 +84,8 @@ const PropertyDetail = () => {
 
   if (!property) return null;
 
+  const canReserve = !user || user.role === 'tenant';
+
   const images = property.images?.length
     ? property.images.map(i => i.filePath)
     : [
@@ -232,6 +234,7 @@ const PropertyDetail = () => {
         {/* ── RIGHT: Contact sidebar ────────────────────── */}
         <div className="lg:col-span-4">
           <div className="lg:sticky lg:top-24 space-y-6">
+            {canReserve && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -258,7 +261,7 @@ const PropertyDetail = () => {
 
               {!user ? (
                 <div className="text-center py-6">
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Please log in as a tenant to join the reservation queue.</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Please log in as a tenant to book this home.</p>
                   <Link to="/login" className="btn-primary w-full !py-3">Login to Reserve</Link>
                 </div>
               ) : (
@@ -278,7 +281,7 @@ const PropertyDetail = () => {
                     <button type="submit" disabled={sending} className="btn-primary w-full !py-4 text-base group">
                       {sending
                         ? <Loader2 className="animate-spin" size={20} />
-                        : <><ListOrdered size={18} /> Join Queue</>
+                        : <><ListOrdered size={18} /> Book Now</>
                       }
                     </button>
                   </form>
@@ -289,8 +292,9 @@ const PropertyDetail = () => {
                 </>
               )}
             </motion.div>
+            )}
 
-            {user && (
+            {user?.role === 'tenant' && (
               <div className="card p-6 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800">
                 <ReservationQueue
                   key={queueRefreshKey}
