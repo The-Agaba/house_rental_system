@@ -118,6 +118,9 @@ const Home = () => {
             <Link to="/properties/new" className="border border-white/30 text-white px-8 py-3.5 rounded-xl text-center hover:bg-white/10 transition-colors">
               List Property
             </Link>
+            <Link to="/about" className="border border-white/30 text-white px-8 py-3.5 rounded-xl text-center hover:bg-white/10 transition-colors">
+              About Us
+            </Link>
           </div>
 
           {/* STATS CARD IN NATURAL FLOW */}

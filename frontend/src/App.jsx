@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 
 // Pages
 import Home from './pages/Home';
+import About from './pages/about';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/properties" element={<Properties />} />
       <Route path="/properties/:id" element={<PropertyDetail />} />
       <Route path="/manual" element={<Manual />} />
+      <Route path="/about" element={<About />} />
       <Route path="/become-landlord" element={<LandlordJoinRequest />} />
       <Route path="/verify-landlord" element={<LandlordEmailVerify />} />
       
