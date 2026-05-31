@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +32,8 @@ const PropertyForm = () => {
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
+  const phoneRef = useRef(null);
+  const [phoneError, setPhoneError] = useState('');
 
   const validateForm = () => {
     const errors = {};
@@ -54,6 +56,18 @@ const PropertyForm = () => {
       errors.rooms = 'Number of rooms must be a positive whole number';
     }
 
+    setFieldErrors(errors);
+    // phone validation
+    const cleanedPhone = String(formData.phone || '').replace(/\s+/g, '');
+    if (cleanedPhone) {
+      if (/\D/.test(cleanedPhone)) {
+        errors.phone = 'Phone must contain digits only';
+      } else if (!cleanedPhone.startsWith('255')) {
+        errors.phone = 'Phone must start with country code 255';
+      } else if (cleanedPhone.length !== 12) {
+        errors.phone = 'Phone must be 12 digits (e.g., 255677472870)';
+      }
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -97,6 +111,30 @@ const PropertyForm = () => {
           });
           if (res.data.images) {
              setPreviews(res.data.images.map(img => img.filePath));
+
+        useEffect(() => {
+          const el = phoneRef.current || document.getElementById('property-phone');
+          if (!el) return;
+          const onInput = (e) => {
+            const v = e.target.value || '';
+            const cleaned = v.replace(/\s+/g, '');
+            if (/\D/.test(cleaned)) {
+              setPhoneError('Phone must contain digits only');
+              return;
+            }
+            if (!cleaned.startsWith('255')) {
+              setPhoneError('Phone must start with country code 255');
+              return;
+            }
+            if (cleaned.length !== 12) {
+              setPhoneError('Phone must be 12 digits (e.g., 255677472870)');
+              return;
+            }
+            setPhoneError('');
+          };
+          el.addEventListener('input', onInput);
+          return () => el.removeEventListener('input', onInput);
+        }, []);
           }
         } catch (err) {
           toast.error('Failed to load listing');
@@ -277,12 +315,17 @@ const PropertyForm = () => {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Phone Number</label>
                     <input
+                      ref={phoneRef}
+                      id="property-phone"
                       type="text"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="e.g. 255712345678"
                       className="input-field !rounded-2xl"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     />
+                    {(phoneError || fieldErrors.phone) && (
+                      <p className="mt-2 ml-1 text-xs font-semibold text-rose-600">{phoneError || fieldErrors.phone}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Contact Email</label>

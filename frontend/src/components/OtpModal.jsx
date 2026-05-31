@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Loader2, X, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -8,8 +8,31 @@ const OtpModal = ({ isOpen, email, onClose }) => {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [submitting, setSubmitting] = useState(false);
   const inputRefs = useRef([]);
+  const [otpError, setOtpError] = useState('');
   const { verifyEmail } = useAuth();
   const navigate = useNavigate();
+
+  // Real-time validation via native `input` events
+  useEffect(() => {
+    const handlers = [];
+    inputRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      const onInput = (e) => {
+        const cleaned = e.target.value.replace(/\D/g, '');
+        if (e.target.value !== cleaned) {
+          setOtpError('Only numeric digits allowed');
+        } else {
+          setOtpError('');
+        }
+      };
+      el.addEventListener('input', onInput);
+      handlers.push({ el, onInput });
+    });
+
+    return () => {
+      handlers.forEach(({ el, onInput }) => el.removeEventListener('input', onInput));
+    };
+  }, [isOpen]);
 
   const handleChange = (index, value) => {
     // Accept only single digit
@@ -134,6 +157,10 @@ const OtpModal = ({ isOpen, email, onClose }) => {
                   />
                 ))}
               </div>
+
+              {otpError && (
+                <p className="text-center text-sm text-red-600 mb-4">{otpError}</p>
+              )}
 
               {/* Submit */}
               <button

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Upload, FileText, Loader2, Check } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -9,12 +9,58 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
   const [requestPropertyId, setRequestPropertyId] = useState(properties[0]?.id || '');
   const [uploading, setUploading] = useState(false);
   const fileInputId = `verification-doc-${requestId}`;
+  const fileInputRef = useRef(null);
+  const propertySelectId = `property-select-${requestId}`;
+  const [error, setError] = useState('');
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
+
+  useEffect(() => {
+    const inputEl = fileInputRef.current || document.getElementById(fileInputId);
+    const selectEl = document.getElementById(propertySelectId);
+
+    const validateFile = () => {
+      setError('');
+      const f = inputEl?.files?.[0];
+      if (!f) return;
+      // basic validations: type and size
+      const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowed.includes(f.type)) {
+        setError('Unsupported file type. Use PDF, PNG, JPG or DOC/DOCX.');
+        return;
+      }
+      const maxMB = 20;
+      if (f.size > maxMB * 1024 * 1024) {
+        setError(`File too large. Max ${maxMB}MB.`);
+      }
+    };
+
+    if (inputEl) {
+      inputEl.addEventListener('input', validateFile);
+      inputEl.addEventListener('change', validateFile);
+    }
+    if (selectEl) {
+      const validateSelect = () => {
+        if (!selectEl.value) setError('Please select the property this document verifies.');
+        else setError('');
+      };
+      selectEl.addEventListener('input', validateSelect);
+    }
+
+    return () => {
+      if (inputEl) {
+        inputEl.removeEventListener('input', validateFile);
+        inputEl.removeEventListener('change', validateFile);
+      }
+      if (selectEl) {
+        selectEl.removeEventListener('input', () => {});
+      }
+    };
+  }, [fileInputId, propertySelectId]);
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -84,6 +130,7 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
           <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-2 ml-1">Select File</label>
           <div className="relative">
             <input
+              ref={fileInputRef}
               type="file"
               required
               id={fileInputId}
@@ -108,6 +155,7 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
         <div>
           <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-2 ml-1">Property This Document Verifies</label>
           <select
+            id={propertySelectId}
             className="input-field text-sm"
             value={requestPropertyId}
             onChange={(e) => setRequestPropertyId(e.target.value)}
@@ -139,6 +187,9 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
           </>
         )}
       </button>
+      {error && (
+        <p className="text-sm text-red-600 mt-2">{error}</p>
+      )}
     </form>
   );
 };

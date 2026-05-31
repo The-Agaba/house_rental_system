@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,7 +11,7 @@ import {
   Menu, X, LogOut, ChevronDown, Award, Search, Play, Pause, Square,
   Sun, Moon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DocumentUploader from '../components/DocumentUploader';
 import NotificationBell from '../components/NotificationBell';
@@ -35,7 +35,6 @@ const StripedBarChart = ({ title, counts, todayIndex }) => {
     const isToday = i === todayIndex;
     const type = isToday ? 'current' : (val > 0 ? 'solid' : 'striped');
     
-    // Scale bar height dynamically between 25px (min) and 140px (max)
     const heightValue = Math.round((val / maxVal) * 110) + 25;
     
     return {
@@ -53,7 +52,13 @@ const StripedBarChart = ({ title, counts, todayIndex }) => {
   const paddingY = 25;
 
   return (
-    <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80 shadow-premium w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80 shadow-premium w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full"
+    >
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest block mb-1">Rental Analytics</span>
@@ -140,7 +145,7 @@ const StripedBarChart = ({ title, counts, todayIndex }) => {
           })}
         </svg>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -157,7 +162,13 @@ const StripedSemiCircleGauge = ({ occupancyPercentage = 0 }) => {
   const completedOffset = circumference - (occupancyPercentage / 100) * circumference;
 
   return (
-    <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80 shadow-premium w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, type: "spring" }}
+      viewport={{ once: true }}
+      className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80 shadow-premium w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full"
+    >
       <div>
         <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest block mb-1">Lease Progress</span>
         <h4 className="text-lg font-display font-extrabold text-slate-950 dark:text-white tracking-tight mb-4">Rental Occupancy</h4>
@@ -167,7 +178,6 @@ const StripedSemiCircleGauge = ({ occupancyPercentage = 0 }) => {
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto max-w-[200px] overflow-visible">
           <StripesDef />
 
-          {/* Background Semi-Circle (Striped) */}
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
@@ -177,7 +187,6 @@ const StripedSemiCircleGauge = ({ occupancyPercentage = 0 }) => {
             className="text-slate-200 dark:text-slate-800"
           />
 
-          {/* Completed Semi-Circle (Solid Primary) */}
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
@@ -189,7 +198,6 @@ const StripedSemiCircleGauge = ({ occupancyPercentage = 0 }) => {
             className="text-primary-600 dark:text-primary-500 transition-all duration-1000 ease-out"
           />
 
-          {/* Center Text */}
           <text
             x={cx}
             y={cy - 12}
@@ -217,7 +225,7 @@ const StripedSemiCircleGauge = ({ occupancyPercentage = 0 }) => {
           <span className="w-2.5 h-2.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 inline-block" /> Available
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -246,8 +254,13 @@ const WavyTimeTracker = () => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary-900 to-primary-950 text-white p-6 md:p-8 shadow-premium flex flex-col justify-between h-full border border-primary-500/10">
-      {/* Decorative Wavy Lines */}
+    <motion.div 
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary-900 to-primary-950 text-white p-6 md:p-8 shadow-premium flex flex-col justify-between h-full border border-primary-500/10"
+    >
       <div className="absolute inset-0 opacity-15 pointer-events-none">
         <svg viewBox="0 0 200 200" className="w-full h-full transform scale-150">
           <path d="M40,-53.7C53.7,-45.5,68,-35.1,72.9,-21.2C77.8,-7.4,73.4,9.8,66,25.2C58.6,40.6,48.2,54.1,34.5,61.9C20.8,69.7,3.9,71.8,-12,67.7C-27.9,63.6,-42.8,53.3,-53.4,40.2C-64,27.1,-70.4,11.2,-71.2,-5.1C-72,-21.4,-67.2,-38.2,-56.3,-46.8C-45.5,-55.5,-28.7,-56.1,-13.4,-57.8C2,59.5,17.3,-62,40,-53.7Z" fill="none" stroke="white" strokeWidth="2.5" transform="translate(100,100)" />
@@ -284,11 +297,9 @@ const WavyTimeTracker = () => {
           <X size={18} className="stroke-[3]" />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
-
-
 
 // ── HELPER COMPONENTS & UTILS FOR LANDLORD ONBOARDING PIPELINE ──
 const getDocUrl = (path) => {
@@ -434,6 +445,24 @@ const getPropertyReviewState = (property) => {
   };
 };
 
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+  }
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
 
 const Dashboard = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -441,22 +470,20 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
-  // Tab states: 'overview' | 'listings' | 'bookings' | 'requests' | 'settings' | 'logs' | 'users' | 'marketplace'
   const [activeTab, setActiveTab] = useState('overview');
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Approval Modal States
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [approvingRequest, setApprovingRequest] = useState(null);
   const [approvedProperties, setApprovedProperties] = useState([{ title: '', location: '' }]);
   const [approvalNotes, setApprovalNotes] = useState('Verified proof of ownership. Approved.');
   const [submittingApproval, setSubmittingApproval] = useState(false);
 
-  // User management modal states
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userForm, setUserForm] = useState({ id: null, email: '', fullName: '', password: '', role: 'tenant', active: true, locality: '', phone: '' });
+  const userPhoneRef = useRef(null);
+  const [userPhoneError, setUserPhoneError] = useState('');
 
-  // Profile Edit State
   const [profileForm, setProfileForm] = useState({ fullName: '', password: '' });
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [acceptingPropertyId, setAcceptingPropertyId] = useState(null);
@@ -613,7 +640,6 @@ const Dashboard = () => {
       fetchDashboardData();
       setProfileForm({ fullName: user.fullName || '', password: '' });
 
-      // Real-time updates without manual page refresh (FR-ADM-05 / NFR-01)
       const interval = setInterval(() => {
         fetchDashboardDataBackground();
       }, 5000);
@@ -737,6 +763,10 @@ const Dashboard = () => {
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
+    if (userPhoneError) {
+      toast.error('Please fix phone number before saving user');
+      return;
+    }
     try {
       if (userForm.id) {
         await axios.put(`/admin/users/${userForm.id}`, {
@@ -788,6 +818,30 @@ const Dashboard = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const el = userPhoneRef.current || document.getElementById('user-phone');
+    if (!el) return;
+    const onInput = (e) => {
+      const v = e.target.value || '';
+      const cleaned = v.replace(/\s+/g, '');
+      if (/\D/.test(cleaned)) {
+        setUserPhoneError('Phone must contain digits only');
+        return;
+      }
+      if (!cleaned.startsWith('255')) {
+        setUserPhoneError('Phone must start with country code 255');
+        return;
+      }
+      if (cleaned.length !== 12) {
+        setUserPhoneError('Phone must be 12 digits (e.g., 255677472870)');
+        return;
+      }
+      setUserPhoneError('');
+    };
+    el.addEventListener('input', onInput);
+    return () => el.removeEventListener('input', onInput);
+  }, []);
 
   const handleReservationAction = async (reservationId, status) => {
     if (status === 'accepted') {
@@ -965,7 +1019,6 @@ const Dashboard = () => {
 
   const roleLabel = user?.role === 'admin' ? 'System Admin' : user?.role === 'landlord' ? 'Verified Host' : 'Elite Renter';
 
-  // ── DYNAMIC METRICS PARSING ──
   const totalPropsCount = data.properties.length;
   const rentedPropsCount = data.properties.filter(p => p.availability !== 'available').length;
   const occupancyRatePercentage = totalPropsCount > 0 ? Math.round((rentedPropsCount / totalPropsCount) * 100) : 0;
@@ -984,7 +1037,6 @@ const Dashboard = () => {
 
   const adminErrorLogs = data.logs.filter(l => l.action?.toLowerCase().includes('error') || l.action?.toLowerCase().includes('failed')).length;
 
-  // ── DYNAMIC METRIC CARD BUILDERS ──
   const getDynamicMetrics = () => {
     if (user.role === 'landlord') {
       return [
@@ -1000,7 +1052,6 @@ const Dashboard = () => {
         { label: 'Reservations', value: data.bookings.length, desc: 'Queue records' }
       ];
     } else {
-      // Tenant
       return [
         { label: 'Accepted Leases', value: tenantApprovedLeases, desc: 'Reservations accepted', highlight: true },
         { label: 'Queue Entries', value: data.bookings.length, desc: 'Total reservation attempts' },
@@ -1010,9 +1061,8 @@ const Dashboard = () => {
     }
   };
 
-  // ── DYNAMIC WEEKLY INQUIRY PARSING FOR BAR CHART ──
   const getBookingsByDayOfWeek = () => {
-    const counts = [0, 0, 0, 0, 0, 0, 0]; // S, M, T, W, T, F, S
+    const counts = [0, 0, 0, 0, 0, 0, 0];
     data.bookings.forEach(b => {
       if (b.createdAt) {
         const day = new Date(b.createdAt).getDay();
@@ -1024,7 +1074,6 @@ const Dashboard = () => {
     return counts;
   };
 
-  // ── DYNAMIC REMINDERS CARD ENGINE ──
   const getReminderData = () => {
     const pendingInquiries = data.bookings.filter(b => b.status === 'confirmed');
     if (pendingInquiries.length > 0) {
@@ -1064,10 +1113,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#08091a] flex flex-col md:flex-row text-slate-900 dark:text-slate-50 transition-colors duration-300 font-sans">
       
-      {/* ── 1. SAAS LIGHT-ADAPTIVE SIDEBAR (DESKTOP) ── */}
+      {/* Sidebar remains unchanged - no animations added to preserve layout */}
       <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-[#0b0c1e] text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-900 h-screen fixed left-0 top-0 z-30 justify-between p-6 transition-all duration-300">
         <div className="space-y-8">
-          {/* Logo Branding */}
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-10 h-10 rounded-[1.1rem] bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center text-white font-display font-black shadow-lg shadow-primary-500/20">
               R
@@ -1078,7 +1126,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Navigation Menu Links */}
           <nav className="space-y-1">
             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest px-3 mb-2">Menu</p>
             {getSidebarTabs().map((tab) => {
@@ -1105,9 +1152,7 @@ const Dashboard = () => {
           </nav>
         </div>
 
-        {/* Sidebar Bottom Promo Card & Sign out */}
         <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-900">
-          
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-900 to-primary-950 text-white p-4 text-center border border-primary-500/10">
             <div className="absolute inset-0 opacity-10">
               <svg viewBox="0 0 100 100" className="w-full h-full transform scale-150">
@@ -1130,7 +1175,7 @@ const Dashboard = () => {
         </div>
       </aside>
 
-      {/* ── 2. MOBILE HEADER & NAVIGATION ── */}
+      {/* Mobile Header & Navigation - unchanged */}
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-950 text-slate-800 dark:text-white fixed top-0 left-0 right-0 z-40 border-b border-slate-100 dark:border-b border-slate-900">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white font-black text-sm shadow-md">
@@ -1156,7 +1201,6 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
@@ -1228,12 +1272,11 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* ── 3. MAIN WORKSPACE CANVAS ── */}
+      {/* MAIN WORKSPACE CANVAS */}
       <main className="flex-1 md:pl-64 pt-20 md:pt-0 min-h-screen flex flex-col transition-all duration-300">
         
-        {/* Top Header bar inspired by Donezo */}
+        {/* Top Header bar - unchanged */}
         <header className="hidden md:flex justify-between items-center px-10 py-6 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-[#08091a] sticky top-0 z-20">
-          
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
@@ -1247,7 +1290,6 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* Theme Toggle Button */}
             <button 
               onClick={toggleDark}
               className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 flex items-center justify-center text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-all"
@@ -1272,24 +1314,27 @@ const Dashboard = () => {
 
         <div className="p-6 sm:p-10 max-w-7xl mx-auto w-full space-y-8 flex-1">
           
-          {/* Active Tab: Overview (Donezo Inspired) */}
+          {/* Overview Tab with Scroll Animations */}
           {activeTab === 'overview' && (
-            <div className="space-y-8">
-              
-              {/* Row 1: Greeting Header (Top Bar navigation removed completely for clean look) */}
-              <div className="pb-6 border-b border-slate-150 dark:border-slate-900">
+            <motion.div 
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className="space-y-8"
+            >
+              {/* Header Section */}
+              <motion.div variants={staggerItem} className="pb-6 border-b border-slate-150 dark:border-slate-900">
                 <h1 className="text-3xl font-display font-black text-slate-950 dark:text-white tracking-tight">Dashboard</h1>
                 <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mt-1">Review active coordinates and optimize housing listings.</p>
-              </div>
+              </motion.div>
 
-              {/* Row 2: Metrics Grid (1 Solid primary card, 3 bordered cards, dynamically loaded) */}
-              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${metrics.length} gap-6`}>
+              {/* Metrics Grid */}
+              <motion.div variants={staggerItem} className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${metrics.length} gap-6`}>
                 {metrics.map((stat, i) => (
                   <motion.div 
                     key={i}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    variants={staggerItem}
+                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
                     className={`rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${
                       stat.highlight
                         ? 'bg-primary-600 text-white shadow-xl shadow-primary-600/15'
@@ -1321,12 +1366,12 @@ const Dashboard = () => {
                     </div>
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
 
+              {/* Admin Specific Content */}
               {user.role === 'admin' && (
-                <div className="space-y-8">
+                <motion.div variants={staggerItem} className="space-y-8">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Column 1: Dynamic Bar Chart */}
                     <div className="lg:col-span-6 flex flex-col">
                       <StripedBarChart 
                         title="System Inquiry Activity" 
@@ -1335,9 +1380,14 @@ const Dashboard = () => {
                       />
                     </div>
 
-                    {/* Column 2: Recent Reservations */}
                     <div className="lg:col-span-6 flex flex-col">
-                      <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        viewport={{ once: true }}
+                        className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between"
+                      >
                         <div className="flex justify-between items-center mb-6">
                           <h4 className="text-lg font-display font-extrabold text-slate-950 dark:text-white tracking-tight">Recent Reservations</h4>
                           <button onClick={() => setActiveTab('bookings')} className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest">
@@ -1372,12 +1422,11 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </div>
                   
-                  {/* Row 2: Pending Property Approvals */}
-                  <div className="grid grid-cols-1">
+                  <motion.div variants={staggerItem}>
                     <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-amber-200 dark:border-amber-900/50 w-full bg-amber-50/30 dark:bg-amber-950/10">
                       <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
@@ -1421,14 +1470,14 @@ const Dashboard = () => {
                         )}
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
 
+              {/* Landlord Specific Content */}
               {user.role === 'landlord' && (
-                <div className="space-y-8">
+                <motion.div variants={staggerItem} className="space-y-8">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Column 1: Dynamic Bar Chart */}
                     <div className="lg:col-span-6 flex flex-col">
                       <StripedBarChart 
                         title="Listing Inquiry Activity" 
@@ -1437,9 +1486,14 @@ const Dashboard = () => {
                       />
                     </div>
 
-                    {/* Column 2: Recent Reservations */}
                     <div className="lg:col-span-6 flex flex-col">
-                      <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        viewport={{ once: true }}
+                        className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between"
+                      >
                         <div className="flex justify-between items-center mb-6">
                           <h4 className="text-lg font-display font-extrabold text-slate-950 dark:text-white tracking-tight">Recent Reservations</h4>
                           <button onClick={() => setActiveTab('bookings')} className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest">
@@ -1474,19 +1528,23 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Column 1: Occupancy Gauge */}
                     <div className="lg:col-span-4 flex flex-col">
                       <StripedSemiCircleGauge occupancyPercentage={occupancyRatePercentage} />
                     </div>
 
-                    {/* Column 2: My Listings */}
                     <div className="lg:col-span-8 flex flex-col">
-                      <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        viewport={{ once: true }}
+                        className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 flex flex-col justify-between h-full"
+                      >
                         <div className="flex justify-between items-center mb-4">
                           <h4 className="text-base font-display font-extrabold text-slate-950 dark:text-white tracking-tight">My Listings</h4>
                           <button
@@ -1518,17 +1576,23 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
+              {/* Tenant Specific Content */}
               {user.role === 'tenant' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* Column 1: Recent Queue Entries */}
+                <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   <div className="lg:col-span-12 flex flex-col">
-                    <div className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      viewport={{ once: true }}
+                      className="glass-card p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 w-full bg-white dark:bg-slate-900/60 h-full flex flex-col justify-between"
+                    >
                       <div className="flex justify-between items-center mb-6">
                         <h4 className="text-lg font-display font-extrabold text-slate-950 dark:text-white tracking-tight">Recent Queue Entries</h4>
                         <button onClick={() => setActiveTab('bookings')} className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest">
@@ -1563,18 +1627,19 @@ const Dashboard = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           )}
 
-          {/* Active Tab: Marketplace */}
+          {/* Marketplace Tab - Add scroll animations */}
           {activeTab === 'marketplace' && user.role !== 'admin' && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/20">
@@ -1591,10 +1656,17 @@ const Dashboard = () => {
 
               <div className="p-8">
                 {data.marketplace.filter(p => p.approved).length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {data.marketplace.filter(p => p.approved).map(prop => (
-                      <div
+                  <motion.div 
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                  >
+                    {data.marketplace.filter(p => p.approved).map((prop, idx) => (
+                      <motion.div
                         key={prop.id}
+                        variants={staggerItem}
+                        whileHover={{ y: -8, transition: { duration: 0.2 } }}
                         className="group relative rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between"
                       >
                         <div>
@@ -1634,9 +1706,9 @@ const Dashboard = () => {
                             </Link>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 ) : (
                   <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-900/10 rounded-[2rem]">
                     <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -1649,11 +1721,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
-          {/* Active Tab: My Portfolio Listings */}
+          {/* Listings Tab - Add scroll animations */}
           {activeTab === 'listings' && (user.role === 'landlord' || user.role === 'admin' || user.role === 'agent') && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/20">
@@ -1694,92 +1767,100 @@ const Dashboard = () => {
                   </div>
                 )}
                 {data.properties.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <motion.div 
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  >
                     {(user.role === 'admin' || user.role === 'agent'
                       ? sortNewestFirst(data.properties)
                       : data.properties
                     ).map(prop => {
                       const reviewState = getPropertyReviewState(prop);
                       return (
-                      <div 
-                        key={prop.id}
-                        className={`group relative rounded-[2rem] border hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between ${reviewState.card}`}
-                      >
-                        <div>
-                          <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm mb-4 bg-slate-100 dark:bg-slate-800">
-                            <img 
-                              src={prop.images?.[0]?.filePath || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=600'} 
-                              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                              alt={prop.title}
-                            />
-                            <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${prop.availability === 'available' ? 'bg-primary-600 text-white' : 'bg-slate-500 text-white'}`}>
-                                ● {prop.availability}
-                              </span>
-                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${reviewState.badge}`}>
-                                {reviewState.label}
-                              </span>
+                        <motion.div 
+                          key={prop.id}
+                          variants={staggerItem}
+                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                          className={`group relative rounded-[2rem] border hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between ${reviewState.card}`}
+                        >
+                          <div>
+                            <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm mb-4 bg-slate-100 dark:bg-slate-800">
+                              <img 
+                                src={prop.images?.[0]?.filePath || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=600'} 
+                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                                alt={prop.title}
+                              />
+                              <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${prop.availability === 'available' ? 'bg-primary-600 text-white' : 'bg-slate-500 text-white'}`}>
+                                  ● {prop.availability}
+                                </span>
+                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest shadow-sm ${reviewState.badge}`}>
+                                  {reviewState.label}
+                                </span>
+                              </div>
+                              <div className="absolute bottom-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-white font-bold text-xs">
+                                {formatTzs(prop.pricePerMonth)}/mo
+                              </div>
                             </div>
-                            <div className="absolute bottom-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-white font-bold text-xs">
-                              {formatTzs(prop.pricePerMonth)}/mo
+
+                            <h4 className="font-bold text-lg mb-1.5 text-slate-950 dark:text-white line-clamp-1 group-hover:text-primary-600 transition-colors">{prop.title}</h4>
+                            <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider mb-4">
+                              <MapPin size={12} className="text-primary-500 shrink-0" />
+                              <span className="line-clamp-1">{prop.location}</span>
                             </div>
-                          </div>
-
-                          <h4 className="font-bold text-lg mb-1.5 text-slate-950 dark:text-white line-clamp-1 group-hover:text-primary-600 transition-colors">{prop.title}</h4>
-                          <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider mb-4">
-                            <MapPin size={12} className="text-primary-500 shrink-0" />
-                            <span className="line-clamp-1">{prop.location}</span>
-                          </div>
-                          {user.role === 'landlord' && (
-                            <div className={`mb-4 rounded-2xl px-4 py-3 text-[11px] font-semibold leading-relaxed ${
-                              reviewState.key === 'notEdited'
-                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
-                                : reviewState.key === 'waitingApproval'
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'
-                            }`}>
-                              {reviewState.message}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                            <Users size={12} className="text-primary-500" /> {prop.rooms} Rooms
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            {(user.role === 'admin' || user.role === 'agent') && !prop.approved && reviewState.key !== 'notEdited' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveProperty(prop.id, true)}
-                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1"
-                                  disabled={acceptingPropertyId === prop.id}
-                                >
-                                  {acceptingPropertyId === prop.id ? <Loader2 className="animate-spin" size={12} /> : null}
-                                  {acceptingPropertyId === prop.id ? 'Accepting...' : 'Accept'}
-                                </button>
-                                <button
-                                  onClick={() => handleDenyProperty(prop.id)}
-                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40"
-                                >
-                                  Deny
-                                </button>
-                              </>
-                            )}
-                            <Link to={`/properties/${prop.id}/edit`} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary-600 transition-all shadow-sm hover:scale-105 active:scale-95">
-                              <Edit3 size={16} />
-                            </Link>
-                            {user.role !== 'landlord' && (
-                              <button onClick={() => handleDeleteProperty(prop.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95">
-                                <Trash2 size={16} />
-                              </button>
+                            {user.role === 'landlord' && (
+                              <div className={`mb-4 rounded-2xl px-4 py-3 text-[11px] font-semibold leading-relaxed ${
+                                reviewState.key === 'notEdited'
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
+                                  : reviewState.key === 'waitingApproval'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
+                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'
+                              }`}>
+                                {reviewState.message}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    )})}
-                  </div>
+
+                          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                              <Users size={12} className="text-primary-500" /> {prop.rooms} Rooms
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              {(user.role === 'admin' || user.role === 'agent') && !prop.approved && reviewState.key !== 'notEdited' && (
+                                <>
+                                  <button
+                                    onClick={() => handleApproveProperty(prop.id, true)}
+                                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1"
+                                    disabled={acceptingPropertyId === prop.id}
+                                  >
+                                    {acceptingPropertyId === prop.id ? <Loader2 className="animate-spin" size={12} /> : null}
+                                    {acceptingPropertyId === prop.id ? 'Accepting...' : 'Accept'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDenyProperty(prop.id)}
+                                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40"
+                                  >
+                                    Deny
+                                  </button>
+                                </>
+                              )}
+                              <Link to={`/properties/${prop.id}/edit`} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary-600 transition-all shadow-sm hover:scale-105 active:scale-95">
+                                <Edit3 size={16} />
+                              </Link>
+                              {user.role !== 'landlord' && (
+                                <button onClick={() => handleDeleteProperty(prop.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95">
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
                 ) : (
                   <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-900/10 rounded-[2rem]">
                     <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -1792,11 +1873,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
-          {/* Active Tab: Manage Users (Admin Only) */}
+          {/* Users Tab - Add scroll animations */}
           {activeTab === 'users' && user.role === 'admin' && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/20">
@@ -1888,11 +1970,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
-          {/* Active Tab: Audit Logs (Admin Only) */}
+          {/* Audit Logs Tab - Add scroll animations */}
           {activeTab === 'logs' && user.role === 'admin' && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
@@ -1953,10 +2036,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
+          {/* Landlord Requests Tab - Add scroll animations */}
           {activeTab === 'requests' && (user.role === 'agent' || user.role === 'admin') && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
@@ -1976,7 +2061,14 @@ const Dashboard = () => {
                   data.landlordRequests.map(request => {
                     const prompt = getActionPrompt(request.status);
                     return (
-                      <div key={request.id} className="rounded-[2rem] bg-white dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                      <motion.div 
+                        key={request.id} 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                        viewport={{ once: true }}
+                        className="rounded-[2rem] bg-white dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden"
+                      >
                         <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800">
                           <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
                             <div className="min-w-0 flex-1 space-y-6">
@@ -2110,7 +2202,7 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })
                 ) : (
@@ -2123,11 +2215,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
-          {/* Active Tab: Reservation Queue */}
+          {/* Bookings Tab - Add scroll animations */}
           {activeTab === 'bookings' && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               className="glass-card rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/80 shadow-premium bg-white dark:bg-slate-900/60"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/20">
@@ -2148,8 +2241,12 @@ const Dashboard = () => {
                 {data.bookings.length > 0 ? (
                   <div className="space-y-6">
                     {data.bookings.map(book => (
-                      <div 
-                        key={book.id} 
+                      <motion.div 
+                        key={book.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                        viewport={{ once: true }}
                         className="p-6 md:p-8 rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-800"
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
@@ -2236,7 +2333,7 @@ const Dashboard = () => {
                             )}
                           </div>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
@@ -2251,6 +2348,7 @@ const Dashboard = () => {
         </div>
       </main>
 
+      {/* Property Request Modal - unchanged */}
       <AnimatePresence>
         {propertyRequestOpen && user.role === 'landlord' && (
           <motion.div
@@ -2341,6 +2439,7 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* User Modal - unchanged */}
       <AnimatePresence>
         {userModalOpen && user.role === 'admin' && (
           <motion.div
@@ -2436,11 +2535,14 @@ const Dashboard = () => {
                   <div>
                     <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Phone</label>
                     <input
+                      id="user-phone"
+                      ref={userPhoneRef}
                       type="tel"
                       className="input-field text-sm"
                       value={userForm.phone}
                       onChange={(e) => setUserForm(f => ({ ...f, phone: e.target.value }))}
                     />
+                    {userPhoneError && <p className="mt-2 ml-1 text-xs font-semibold text-rose-600">{userPhoneError}</p>}
                   </div>
                 </div>
 
@@ -2475,6 +2577,7 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Approval Modal - unchanged */}
       <AnimatePresence>
         {approvalModalOpen && approvingRequest && (
           <motion.div

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, User, Loader2, ArrowRight, Home, Building2, UserCircle } from 'lucide-react';
@@ -9,6 +9,12 @@ const Register = () => {
   const [form, setForm] = useState({ email: '', password: '', fullName: '', role: 'tenant' });
   const [submitting, setSubmitting] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
+  const fullNameRef = useRef(null);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const [fullNameError, setFullNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -16,6 +22,9 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (fullNameError || emailError || passwordError) {
+      return;
+    }
     setSubmitting(true);
     try {
       await register(form);
@@ -27,6 +36,50 @@ const Register = () => {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const elName = fullNameRef.current || document.querySelector('#register-fullname');
+    const elEmail = emailRef.current || document.querySelector('#register-email');
+    const elPass = passwordRef.current || document.querySelector('#register-password');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const cleanups = [];
+
+    if (elName) {
+      const onInput = (e) => {
+        const v = (e.target.value || '').trim();
+        if (!v) setFullNameError('Full name is required');
+        else if (v.length < 2) setFullNameError('Enter your full name');
+        else setFullNameError('');
+      };
+      elName.addEventListener('input', onInput);
+      cleanups.push(() => elName.removeEventListener('input', onInput));
+    }
+
+    if (elEmail) {
+      const onInput = (e) => {
+        const v = (e.target.value || '').trim();
+        if (!v) setEmailError('Email is required');
+        else if (!emailRegex.test(v)) setEmailError('Invalid email address');
+        else setEmailError('');
+      };
+      elEmail.addEventListener('input', onInput);
+      cleanups.push(() => elEmail.removeEventListener('input', onInput));
+    }
+
+    if (elPass) {
+      const onInput = (e) => {
+        const v = e.target.value || '';
+        if (!v) setPasswordError('Password is required');
+        else if (v.length < 6) setPasswordError('Password must be at least 6 characters');
+        else setPasswordError('');
+      };
+      elPass.addEventListener('input', onInput);
+      cleanups.push(() => elPass.removeEventListener('input', onInput));
+    }
+
+    return () => cleanups.forEach(fn => fn());
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-72px)] flex items-center justify-center px-4 py-16 bg-slate-50 dark:bg-[#08091a]">
@@ -62,10 +115,13 @@ const Register = () => {
                   <input
                     type="text" required
                     placeholder="John Doe"
+                    id="register-fullname"
+                    ref={fullNameRef}
                     className="input-field !pl-11"
                     value={form.fullName}
                     onChange={set('fullName')}
                   />
+                  {fullNameError && <p className="mt-2 text-sm text-rose-600">{fullNameError}</p>}
                 </div>
               </div>
               <div>
@@ -75,10 +131,13 @@ const Register = () => {
                   <input
                     type="email" required
                     placeholder="name@example.com"
+                    id="register-email"
+                    ref={emailRef}
                     className="input-field !pl-11"
                     value={form.email}
                     onChange={set('email')}
                   />
+                  {emailError && <p className="mt-2 text-sm text-rose-600">{emailError}</p>}
                 </div>
               </div>
             </div>
@@ -89,12 +148,15 @@ const Register = () => {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                 <input
+                  id="register-password"
+                  ref={passwordRef}
                   type="password" required minLength={6}
                   placeholder="Create a strong password (min. 6 chars)"
                   className="input-field !pl-11"
                   value={form.password}
                   onChange={set('password')}
                 />
+                {passwordError && <p className="mt-2 text-sm text-rose-600">{passwordError}</p>}
               </div>
             </div>
 

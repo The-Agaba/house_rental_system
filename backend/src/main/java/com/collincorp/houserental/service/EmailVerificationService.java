@@ -104,10 +104,21 @@ public class EmailVerificationService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(senderEmail);
         message.setTo(email);
-        message.setSubject("Complete Your Registration - Verification Code");
-        message.setText("Your 6-digit registration verification code is: " + code+"\n"+
-         "Please Do not share with anyone , this is for security purpose "+"\n"+"\n"+" "+
-                "!!! Warning Use it Before exipiration time and if it expired request new verification code."
+        message.setSubject("🔐 Complete Your Registration - Verification Code Required");
+        message.setText(
+                "Dear User,\n\n" +
+                        "✅ Your 6-digit registration verification code is: **" + code + "**\n\n" +
+                        "⏰ This code will expire in 10 minutes. Please use it before expiration.\n\n" +
+                        "🔒 For your security:\n" +
+                        "• NEVER share this code with anyone, including anyone claiming to be from our support team\n" +
+                        "• Our staff will NEVER ask for your verification code\n" +
+                        "• Keep this code confidential\n\n" +
+                        "⚠️ Warning:\n" +
+                        "• If the code expires, please request a new verification code\n" +
+                        "• Do not attempt to use an expired code\n\n" +
+                        "Need help? Contact our support team.\n\n" +
+                        "Best regards,\n" +
+                        "House Rental Security Team 🏠🔐"
         );
 
         mailSender.send(message);

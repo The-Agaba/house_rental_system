@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, Info } from 'lucide-react';
 import axios from 'axios';
 
 const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
   const [earliestDate, setEarliestDate] = useState(null);
   const [loading, setLoading] = useState(true);
+  const dateInputRef = useRef(null);
+  const [dateError, setDateError] = useState('');
 
   useEffect(() => {
     const fetchEarliestDate = async () => {
@@ -25,6 +27,21 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
 
     fetchEarliestDate();
   }, [propertyId]);
+
+  useEffect(() => {
+    const el = dateInputRef.current && dateInputRef.current;
+    if (!el) return;
+    const onInput = (e) => {
+      setDateError('');
+      const val = e.target.value;
+      if (!val) return;
+      if (earliestDate && new Date(val) < new Date(earliestDate)) {
+        setDateError(`Please choose a date on or after ${new Date(earliestDate).toLocaleDateString()}`);
+      }
+    };
+    el.addEventListener('input', onInput);
+    return () => el.removeEventListener('input', onInput);
+  }, [earliestDate]);
 
   if (loading) {
     return (
@@ -57,6 +74,7 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
       <div className="relative">
         <CalendarIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
         <input
+          ref={dateInputRef}
           type="date"
           required
           min={earliestDate}
@@ -64,6 +82,7 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
           value={selectedDate}
           onChange={(e) => onDateSelected(e.target.value)}
         />
+        {dateError && <p className="text-sm text-red-600 mt-2">{dateError}</p>}
       </div>
     </div>
   );

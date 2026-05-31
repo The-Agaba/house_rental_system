@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, Home } from 'lucide-react';
@@ -9,11 +9,16 @@ const Login = () => {
   const [password,    setPassword]    = useState('');
   const [showPass,    setShowPass]    = useState(false);
   const [submitting,  setSubmitting]  = useState(false);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { login } = useAuth();
   const navigate  = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (emailError || passwordError) return;
     setSubmitting(true);
     try {
       await login(email, password);
@@ -24,6 +29,33 @@ const Login = () => {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const elEmail = emailRef.current || document.getElementById('login-email');
+    const elPass = passwordRef.current || document.getElementById('login-password');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanups = [];
+    if (elEmail) {
+      const onInput = (e) => {
+        const v = (e.target.value || '').trim();
+        if (!v) setEmailError('Email is required');
+        else if (!emailRegex.test(v)) setEmailError('Invalid email');
+        else setEmailError('');
+      };
+      elEmail.addEventListener('input', onInput);
+      cleanups.push(() => elEmail.removeEventListener('input', onInput));
+    }
+    if (elPass) {
+      const onInput = (e) => {
+        const v = e.target.value || '';
+        if (!v) setPasswordError('Password is required');
+        else setPasswordError('');
+      };
+      elPass.addEventListener('input', onInput);
+      cleanups.push(() => elPass.removeEventListener('input', onInput));
+    }
+    return () => cleanups.forEach(fn => fn());
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-72px)] flex items-center justify-center px-4 py-16 bg-slate-50 dark:bg-[#08091a]">
@@ -58,12 +90,14 @@ const Login = () => {
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                 <input
                   id="login-email"
+                  ref={emailRef}
                   type="email" required
                   placeholder="name@example.com"
                   className="input-field !pl-11"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                 />
+                {emailError && <p className="mt-2 text-sm text-rose-600">{emailError}</p>}
               </div>
             </div>
 
@@ -77,12 +111,14 @@ const Login = () => {
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                 <input
                   id="login-password"
+                  ref={passwordRef}
                   type={showPass ? 'text' : 'password'} required
                   placeholder="••••••••"
                   className="input-field !pl-11 !pr-12"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                 />
+                {passwordError && <p className="mt-2 text-sm text-rose-600">{passwordError}</p>}
                 <button
                   type="button"
                   onClick={() => setShowPass(s => !s)}

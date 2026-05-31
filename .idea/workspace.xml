@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1130bfe6-f1a2-4c70-9fe1-f758a26b7a39" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/EmailVerificationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/EmailVerificationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,7 +13,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="220" />
+    <option name="cachedIndexableFilesCount" value="305" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -33,12 +31,12 @@
     &quot;assignee&quot;: &quot;wartwasg&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/The-Agaba/house_rental_system&quot;,
-    &quot;accountId&quot;: &quot;c0b0211b-90bc-414c-870a-748661ac87d6&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/The-Agaba/house_rental_system",
+    "accountId": "765958d2-5748-434c-bc78-aab5398203b7"
   }
-}</component>
+}]]></component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -53,61 +51,64 @@
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
       <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0000008178696287" />
-      <entry key="S2" value="1.0984537408094992" />
-      <entry key="S5" value="2.505388374800922" />
-      <entry key="S10" value="7.505041565936576" />
-      <entry key="S30" value="26.10298369258889" />
-      <entry key="S60" value="38.10097641522331" />
-      <entry key="M2" value="46.46270950155932" />
-      <entry key="M5" value="52.48790695872069" />
-      <entry key="M10" value="54.69386048623932" />
-      <entry key="M15" value="55.51286055229241" />
-      <entry key="M30" value="57.95891721148627" />
-      <entry key="H1" value="66.5810552613927" />
-      <entry key="H2" value="81.40348599786294" />
-      <entry key="H4" value="95.84875724255653" />
-      <entry key="D1" value="114.33884863078956" />
-      <entry key="W1" value="118.31119943373102" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0" />
+      <entry key="S5" value="1.0" />
+      <entry key="S10" value="1.0000000072693926" />
+      <entry key="S30" value="1.0244997170676475" />
+      <entry key="S60" value="2.4403745116288906" />
+      <entry key="M2" value="12.923402675364676" />
+      <entry key="M5" value="49.46138973973913" />
+      <entry key="M10" value="84.45793408386125" />
+      <entry key="M15" value="102.5152523539078" />
+      <entry key="M30" value="126.69717229974204" />
+      <entry key="H1" value="147.7302491059545" />
+      <entry key="H2" value="169.5335651787473" />
+      <entry key="H4" value="188.24771538889115" />
+      <entry key="D1" value="211.26527046622175" />
+      <entry key="W1" value="216.15354615929218" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="5.965461710287082E-19" />
-      <entry key="MS500" value="2.265316104666216E-4" />
-      <entry key="S2" value="0.12268238298168488" />
-      <entry key="S5" value="0.432028981483025" />
-      <entry key="S10" value="0.6572891155975619" />
-      <entry key="S30" value="0.8694650851901442" />
-      <entry key="S60" value="0.9324511168168195" />
-      <entry key="M2" value="0.9656443821857453" />
-      <entry key="M5" value="1.0064894692067763" />
-      <entry key="M10" value="1.2734519456702353" />
-      <entry key="M15" value="1.6726287470604582" />
-      <entry key="M30" value="2.6401891486656477" />
-      <entry key="H1" value="3.56071055590935" />
-      <entry key="H2" value="4.200170548714273" />
-      <entry key="H4" value="4.577721348259241" />
-      <entry key="D1" value="4.9262952991548286" />
-      <entry key="W1" value="4.989386314412176" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="2.8188218458426533E-211" />
+      <entry key="S2" value="3.2371644876375616E-53" />
+      <entry key="S5" value="1.4965757632694963E-21" />
+      <entry key="S10" value="5.4500678009647514E-11" />
+      <entry key="S30" value="6.013354433035922E-4" />
+      <entry key="S60" value="0.034722438988280924" />
+      <entry key="M2" value="0.2701717492875275" />
+      <entry key="M5" value="1.027736250496331" />
+      <entry key="M10" value="1.8063664307855551" />
+      <entry key="M15" value="2.390619214242442" />
+      <entry key="M30" value="3.6450887980806654" />
+      <entry key="H1" value="4.888286664442094" />
+      <entry key="H2" value="5.801035752247167" />
+      <entry key="H4" value="6.359181485707563" />
+      <entry key="D1" value="6.886911222432459" />
+      <entry key="W1" value="6.983682873908709" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="2.855011712596246E-7" />
-      <entry key="MS500" value="0.049138058067409084" />
-      <entry key="S2" value="0.6433272085400189" />
-      <entry key="S5" value="2.5929364469021174" />
-      <entry key="S10" value="7.946172479199551" />
-      <entry key="S30" value="26.875765561263538" />
-      <entry key="S60" value="38.97851210605743" />
-      <entry key="M2" value="47.39866882555422" />
-      <entry key="M5" value="53.48145715738456" />
-      <entry key="M10" value="55.95748504868497" />
-      <entry key="M15" value="57.17533276221828" />
-      <entry key="M30" value="60.58919947808285" />
-      <entry key="H1" value="70.13405364336717" />
-      <entry key="H2" value="85.59861768463176" />
-      <entry key="H4" value="100.42354776279481" />
-      <entry key="D1" value="119.2645834869228" />
-      <entry key="W1" value="123.30050367926289" />
+      <entry key="MS100" value="0.0016423758110424107" />
+      <entry key="MS500" value="0.27739236801696127" />
+      <entry key="S2" value="0.7257275783497675" />
+      <entry key="S5" value="0.8796490759224357" />
+      <entry key="S10" value="0.9378960974563215" />
+      <entry key="S30" value="1.0039176186521925" />
+      <entry key="S60" value="2.463251428791449" />
+      <entry key="M2" value="13.182920021256587" />
+      <entry key="M5" value="50.4772522829663" />
+      <entry key="M10" value="86.2530596640882" />
+      <entry key="M15" value="104.894740544147" />
+      <entry key="M30" value="130.3316935550294" />
+      <entry key="H1" value="152.61012642700894" />
+      <entry key="H2" value="175.32898593819655" />
+      <entry key="H4" value="194.60358647508792" />
+      <entry key="D1" value="218.15154059696403" />
+      <entry key="W1" value="223.13713493816945" />
     </decayedShown>
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/frontend/package.json" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4,
@@ -146,6 +147,11 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
+    ]
   }
 }]]></component>
   <component name="RecentsManager">
@@ -175,6 +181,14 @@
       </method>
     </configuration>
   </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.24374.151" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.24374.151" />
+      </set>
+    </attachedChunks>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="1130bfe6-f1a2-4c70-9fe1-f758a26b7a39" name="Changes" comment="" />
@@ -183,6 +197,7 @@
       <option name="presentableId" value="Default" />
       <updated>1778931900482</updated>
       <workItem from="1779338730825" duration="4687000" />
+      <workItem from="1780263456268" duration="1413000" />
     </task>
     <servers />
   </component>
