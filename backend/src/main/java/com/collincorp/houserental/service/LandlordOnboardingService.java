@@ -106,12 +106,11 @@ public class LandlordOnboardingService {
         //send email to show the locality to go
         emailVerificationService.sendLandlordVerificationEmail("Hello Dear User Please Visit Your Agent At Your Locality "+dto.locality()+""+"Central office"+"\n"+
                  "Please go with Your full Identification Documents \n"+
-                "1.Your NIDA \n"+" " +
-                        "2. Your TIN number \n"+""+
-                "3. Your Ownership Document of Your properties(s)"+"\n"+" "+
-                " Our office are open Monday to Sunday from 08:00 up to 18:00"
+                 "1. Your NIDA card \n"+
+                 "2. Your TIN number \n"+
+                 " Our office are open Monday to Sunday from 08:00 up to 18:00"
 
-                );
+                 );
 
         List<PropertyRegistrationDto> submittedProperties = dto.properties() == null ? List.of() : dto.properties();
         if (submittedProperties.isEmpty()) {
@@ -251,8 +250,8 @@ public class LandlordOnboardingService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "request_property_mismatch");
             }
         }
-        if ("OWNERSHIP".equalsIgnoreCase(documentType) && requestProperty == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "ownership_property_required");
+        if ("NIDA".equalsIgnoreCase(documentType) && requestProperty == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "nida_property_required");
         }
 
         // Store file and get path
@@ -294,10 +293,10 @@ public class LandlordOnboardingService {
         boolean requiresTinDocument = request.getRequestType() == LandlordRequestType.initial_landlord;
         boolean hasTinDocument = documents.stream()
                 .anyMatch(doc -> "TIN".equalsIgnoreCase(doc.getDocumentType()));
-        boolean allClaimsHaveOwnershipDocument = claimedProperties.stream()
+        boolean allClaimsHaveNidaDocument = claimedProperties.stream()
                 .allMatch(property -> landlordDocumentRepository.existsByLandlordRequestIdAndRequestPropertyIdAndDocumentTypeIgnoreCase(
-                        request.getId(), property.getId(), "OWNERSHIP"));
-        if ((requiresTinDocument && !hasTinDocument) || claimedProperties.isEmpty() || !allClaimsHaveOwnershipDocument) {
+                        request.getId(), property.getId(), "NIDA"));
+        if ((requiresTinDocument && !hasTinDocument) || claimedProperties.isEmpty() || !allClaimsHaveNidaDocument) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "missing_required_documents");
         }
 

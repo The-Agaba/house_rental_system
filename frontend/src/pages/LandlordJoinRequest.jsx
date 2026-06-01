@@ -87,7 +87,7 @@ const LandlordJoinRequest = () => {
           <h1 className="text-3xl font-display font-extrabold text-slate-950 dark:text-white mb-4">Application Submitted!</h1>
           <p className="text-slate-600 dark:text-slate-300 text-sm font-medium leading-relaxed mb-8">
             Thank you for applying to RentHub. Your request has been successfully submitted.
-            A verified RentHub agent in your locality (<span className="font-bold text-primary-600 dark:text-primary-400">{form.locality}</span>) will contact you shortly to arrange a physical document verification (proof of property ownership and TRA TIN verification).
+            A verified RentHub agent in your locality (<span className="font-bold text-primary-600 dark:text-primary-400">{form.locality}</span>) will contact you shortly to arrange a physical document verification (NIDA card and TRA TIN verification).
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/" className="btn-primary w-full sm:w-auto !py-3">
@@ -276,7 +276,7 @@ const LandlordJoinRequest = () => {
 
             {/* Note */}
             <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-100/70 dark:border-amber-900/30 text-[11px] text-amber-800 dark:text-amber-400 leading-relaxed font-medium">
-              <strong>Verification note:</strong> Your submitted TRA TIN and property ownership titles must match your physical documents. Each claimed property will stay hidden until you complete its listing details and an agent approves it.
+              <strong>Verification note:</strong> Your submitted TRA TIN and NIDA documents must match your physical records. Each claimed property will stay hidden until you complete its listing details and an agent approves it.
             </div>
 
             {/* Submit */}

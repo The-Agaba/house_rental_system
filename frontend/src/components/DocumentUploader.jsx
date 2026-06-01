@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
   const [file, setFile] = useState(null);
-  const [docType, setDocType] = useState('OWNERSHIP'); // 'OWNERSHIP', 'TIN', 'OTHER'
+  const [docType, setDocType] = useState('NIDA'); // 'NIDA', 'TIN', 'OTHER'
   const [requestPropertyId, setRequestPropertyId] = useState(properties[0]?.id || '');
   const [uploading, setUploading] = useState(false);
   const fileInputId = `verification-doc-${requestId}`;
@@ -22,8 +22,8 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
       toast.error('Please select a file to upload first.');
       return;
     }
-    if (docType === 'OWNERSHIP' && properties.length > 0 && !requestPropertyId) {
-      toast.error('Choose the property this ownership document belongs to.');
+    if (docType === 'NIDA' && properties.length > 0 && !requestPropertyId) {
+      toast.error('Choose the property this NIDA document belongs to.');
       return;
     }
 
@@ -31,7 +31,7 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('documentType', docType);
-    if (docType === 'OWNERSHIP' && requestPropertyId) {
+    if (docType === 'NIDA' && requestPropertyId) {
       formData.append('requestPropertyId', requestPropertyId);
     }
 
@@ -62,7 +62,7 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
         <div className="flex-1">
           <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-2 ml-1">Document Type</label>
           <div className="grid grid-cols-3 gap-2">
-            {['OWNERSHIP', 'TIN', 'OTHER'].map((type) => (
+            {['NIDA', 'TIN', 'OTHER'].map((type) => (
               <button
                 key={type}
                 type="button"
@@ -104,7 +104,7 @@ const DocumentUploader = ({ requestId, properties = [], onUploadSuccess }) => {
         </div>
       </div>
 
-      {docType === 'OWNERSHIP' && properties.length > 0 && (
+      {docType === 'NIDA' && properties.length > 0 && (
         <div>
           <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-2 ml-1">Property This Document Verifies</label>
           <select
