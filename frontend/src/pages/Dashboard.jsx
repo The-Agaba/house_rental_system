@@ -366,7 +366,7 @@ const getActionPrompt = (status) => {
       };
     case 'assigned':
       return {
-        text: 'Action Required: Meet the landlord, verify ownership credentials, and upload their documents below.',
+        text: 'Action Required: Meet the landlord, verify NIDA credentials, and upload their documents below.',
         color: 'text-primary-700 bg-primary-50 dark:bg-primary-950/10 border-primary-100/70'
       };
     case 'verified':
@@ -449,7 +449,7 @@ const Dashboard = () => {
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [approvingRequest, setApprovingRequest] = useState(null);
   const [approvedProperties, setApprovedProperties] = useState([{ title: '', location: '' }]);
-  const [approvalNotes, setApprovalNotes] = useState('Verified proof of ownership. Approved.');
+  const [approvalNotes, setApprovalNotes] = useState('Verified NIDA documents. Approved.');
   const [submittingApproval, setSubmittingApproval] = useState(false);
   const [resendingVerificationId, setResendingVerificationId] = useState(null);
 
@@ -866,7 +866,7 @@ const Dashboard = () => {
       title: property.title,
       location: property.location
     })));
-    setApprovalNotes('Verified proof of ownership. Approved.');
+    setApprovalNotes('Verified NIDA documents. Approved.');
     setApprovalModalOpen(true);
   };
 
@@ -876,15 +876,15 @@ const Dashboard = () => {
     const claimedProperties = approvingRequest.properties || [];
     const isAdditionalPropertyRequest = approvingRequest.requestType === 'additional_property';
     const hasTinDocument = isAdditionalPropertyRequest || approvingRequest.documents?.some(doc => doc.documentType?.toUpperCase() === 'TIN');
-    const allClaimsHaveOwnership = claimedProperties.length > 0 && claimedProperties.every(property =>
+    const allClaimsHaveNida = claimedProperties.length > 0 && claimedProperties.every(property =>
       approvingRequest.documents?.some(doc =>
-        doc.documentType?.toUpperCase() === 'OWNERSHIP' && String(doc.requestPropertyId) === String(property.id)
+        doc.documentType?.toUpperCase() === 'NIDA' && String(doc.requestPropertyId) === String(property.id)
       )
     );
-    if (!hasTinDocument || !allClaimsHaveOwnership) {
+    if (!hasTinDocument || !allClaimsHaveNida) {
       toast.error(isAdditionalPropertyRequest
-        ? 'Upload one ownership document for each requested property before approval.'
-        : 'Upload the TIN document and one ownership document for each claimed property before approval.');
+        ? 'Upload one NIDA document for each requested property before approval.'
+        : 'Upload the TIN document and one NIDA document for each claimed property before approval.');
       return;
     }
 
@@ -903,8 +903,8 @@ const Dashboard = () => {
       const errorKey = err.response?.data?.message || err.response?.data?.error;
       toast.error(errorKey === 'missing_required_documents'
         ? (isAdditionalPropertyRequest
-          ? 'Upload one ownership document for each requested property before approval.'
-          : 'Upload the TIN document and one ownership document for each claimed property before approval.')
+          ? 'Upload one NIDA document for each requested property before approval.'
+          : 'Upload the TIN document and one NIDA document for each claimed property before approval.')
         : errorKey || 'Failed to approve landlord request');
     } finally {
       setSubmittingApproval(false);
@@ -2063,7 +2063,7 @@ const Dashboard = () => {
                               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {request.properties.map(property => {
                                   const hasDoc = request.documents?.some(doc =>
-                                    doc.documentType?.toUpperCase() === 'OWNERSHIP' && String(doc.requestPropertyId) === String(property.id)
+                                    doc.documentType?.toUpperCase() === 'NIDA' && String(doc.requestPropertyId) === String(property.id)
                                   );
                                   return (
                                     <div key={property.id} className="rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
@@ -2345,7 +2345,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 text-xs font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
-                  This does not publish a property. It creates a verification request so an agent or admin can upload ownership documents and approve the property for editing.
+                  This does not publish a property. It creates a verification request so an agent or admin can upload NIDA documents and approve the property for editing.
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">

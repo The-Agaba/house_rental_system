@@ -16,7 +16,7 @@ public class LandlordDocumentEntity {
     private LandlordRequestEntity landlordRequest;
 
     @Column(name = "document_type", nullable = false)
-    private String documentType; // "OWNERSHIP", "TIN", "OTHER"
+    private String documentType; // "NIDA", "TIN", "OTHER"
 
     @Column(name = "file_path", nullable = false, length = 1024)
     private String filePath;
