@@ -45,12 +45,17 @@ public class EmailVerificationService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(senderEmail);
         message.setTo(cleanEmail);
-        message.setSubject("Verify Your Landlord Account - RentHub");
-        message.setText("Congratulations! Your landlord registration request on RentHub has been approved.\n\n" +
-                "To verify your email and activate your account, please use the following OTP code: " + code + "\n\n" +
-                "To activate your account, visit the RentHub home page and open the Verify Code menu. Enter your email, OTP code, and choose a new password before logging in.\n\n" +
-                "Once verified, you will be able to log in, complete your profile, and upload images for your registered properties.\n\n" +
-                "Welcome to RentHub!");
+        message.setSubject("Landlord Account Verification - RentHub");
+        message.setText("Welcome to RentHub!\n\n" +
+                "Your landlord account has been approved. To complete the verification process:\n\n" +
+                "1. Visit the RentHub homepage (https://rentalhub.com)\n" +
+                "2. Open the 'Verify Code' menu option from the navigation\n" +
+                "3. Enter your email and the verification code below\n\n" +
+                "Your verification code is: " + code + "\n\n" +
+                "This code will expire after use or after a set time period. " +
+                "Do not share this code with anyone.\n\n" +
+                "Once verified, you can log in with your credentials and manage your properties.\n\n" +
+                "Need help? Contact our support team at support@rentalhub.com");
         mailSender.send(message);
     }
 
@@ -97,5 +102,101 @@ public class EmailVerificationService {
 
     public RegisterRequest getAndClearPendingRegistration(String email) {
         return pendingRegistrations.remove(email.trim().toLowerCase());
+    }
+
+    /**
+     * Resend verification code for tenant registration.
+     * Invalidates old code and generates a new one.
+     */
+    public String resendVerificationCode(String email) {
+        String cleanEmail = email.trim().toLowerCase();
+        
+        // Invalidate old code if exists
+        verificationCodes.remove(cleanEmail);
+        
+        // Generate new code
+        String newCode = String.format("%06d", new Random().nextInt(1000000));
+        verificationCodes.put(cleanEmail, newCode);
+        
+        // Send email
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject("Verification Code - RentHub Registration");
+        message.setText("Your new 6-digit verification code is: " + newCode + "\n\n" +
+                "This code will expire after one attempt or after a certain time period. " +
+                "Do not share this code with anyone.\n\n" +
+                "If you did not request this code, please ignore this email.");
+        mailSender.send(message);
+        
+        return newCode;
+    }
+
+    /**
+     * Resend verification code for landlord account verification.
+     * Invalidates old code and generates a new one.
+     */
+    public String resendLandlordVerificationCode(String email) {
+        String cleanEmail = email.trim().toLowerCase();
+        
+        // Invalidate old code if exists
+        landlordVerificationCodes.remove(cleanEmail);
+        
+        // Generate new code
+        String newCode = String.format("%06d", new Random().nextInt(1000000));
+        landlordVerificationCodes.put(cleanEmail, newCode);
+        
+        // Send email with improved instructions
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject("Landlord Account Verification - RentHub");
+        message.setText("Welcome to RentHub!\n\n" +
+                "Your landlord account has been approved. To complete the verification process:\n\n" +
+                "1. Visit the RentHub homepage (https://rentalhub.com)\n" +
+                "2. Open the 'Verify Code' menu option from the navigation\n" +
+                "3. Enter your email and the verification code below\n\n" +
+                "Your verification code is: " + newCode + "\n\n" +
+                "This code will expire after use or after a set time period. " +
+                "Do not share this code with anyone.\n\n" +
+                "Once verified, you can log in with your credentials and manage your properties.\n\n" +
+                "Need help? Contact our support team at support@rentalhub.com");
+        mailSender.send(message);
+        
+        return newCode;
+    }
+
+    /**
+     * Send landlord approval email with verification code and temporary password.
+     * This email is sent when an agent approves a new landlord registration.
+     */
+    public void sendLandlordApprovalEmail(String email, String verificationCode, String temporaryPassword) {
+        String cleanEmail = email.trim().toLowerCase();
+        
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject("Your RentHub Landlord Account has been Approved!");
+        message.setText("Congratulations!\n\n" +
+                "Your landlord registration request has been approved. Your account is now ready to use.\n\n" +
+                "ACCOUNT ACTIVATION DETAILS:\n" +
+                "================================\n" +
+                "Your verification code: " + verificationCode + "\n" +
+                "Your temporary password: " + temporaryPassword + "\n" +
+                "================================\n\n" +
+                "TO COMPLETE YOUR SETUP:\n" +
+                "1. Visit the RentHub homepage (https://rentalhub.com)\n" +
+                "2. Click 'Verify Code' in the navigation menu\n" +
+                "3. Enter your email and the verification code above\n" +
+                "4. Create a permanent password when prompted\n" +
+                "5. Log in to your landlord dashboard\n\n" +
+                "SECURITY REMINDER:\n" +
+                "- Do not share your password with anyone\n" +
+                "- Do not share your verification code with anyone\n" +
+                "- Destroy this email after saving your credentials securely\n\n" +
+                "NEED HELP?\n" +
+                "Contact our support team at support@rentalhub.com or visit https://rentalhub.com/manual\n\n" +
+                "Welcome to the RentHub community!");
+        mailSender.send(message);
     }
 }

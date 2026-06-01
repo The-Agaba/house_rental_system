@@ -9,15 +9,13 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/house_rental}
-    username: ${DB_USERNAME:dominic}
-    password: ${DB_PASSWORD:1234}
-    #username: postgres
-    #password: 1234
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     open-in-view: false
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -36,10 +34,10 @@ spring:
     baseline-version: "6"
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: nazarethdominic189@gmail.com
-    password: ${MAIL_PASSWORD:ugyvgfnypfvlglos}
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:noreply@rentalhub.com}
+    password: ${MAIL_PASSWORD:dev-password}
     properties:
       mail:
         smtp:
@@ -48,34 +46,25 @@ spring:
             enable: true
 
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8080}
 
 app:
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  homepage-url: ${APP_HOMEPAGE_URL:http://localhost:5173}
   jwt:
-    secret: ${JWT_SECRET:6e6082f88351504749d1537f7d10b9ee51018f33bb1e0a58c0ad768490784112}
+    secret: ${JWT_SECRET:dev-jwt-secret-key-32-bytes-minimum}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   uploads:
     dir: ${UPLOAD_DIR:./house_rental_uploads}
   cloudinary:
-    cloud-name: ${CLOUDINARY_CLOUD_NAME:dp2sofb5n}
-    api-key: ${CLOUDINARY_API_KEY:116679892943646}
-    api-secret: ${CLOUDINARY_API_SECRET:jEFtAjdjdbJ2QexABpJWW9h5U2Y}
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:dev}
+    api-key: ${CLOUDINARY_API_KEY:dev}
+    api-secret: ${CLOUDINARY_API_SECRET:dev}
 
 logging:
   level:
+    root: INFO
     org:
-      hibernate:
-        SQL: DEBUG
-        orm:
-          jdbc:
-            bind: TRACE
-
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  jpa:
-    show-sql: true
+      springframework: INFO
+      hibernate: INFO

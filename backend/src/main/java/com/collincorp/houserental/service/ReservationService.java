@@ -346,6 +346,7 @@ public class ReservationService {
         if (property.getAvailability() == PropertyAvailability.rented) {
             LocalDate minimumStartDate = earliest;
             earliest = getActiveRentalEndDate(propertyId)
+                    .map(endDate -> endDate.plusDays(2))  // Lease End Date + 48 Hours
                     .filter(endDate -> endDate.isAfter(minimumStartDate))
                     .orElse(minimumStartDate);
         }

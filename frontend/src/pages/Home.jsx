@@ -209,29 +209,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────── */}
-      <section className="section container">
-        <div className="bg-primary-600 rounded-4xl sm:rounded-5xl p-10 sm:p-16 md:p-24 text-center relative overflow-hidden">
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_55%)]" />
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-5 leading-tight">
-              Ready to find your <br className="hidden sm:block" /> dream space?
-            </h2>
-            <p className="text-primary-100 text-lg mb-10 leading-relaxed">
-              Join thousands of happy tenants and discover the place you've always wanted.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-white text-primary-600 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-primary-50 transition-colors shadow-xl w-full sm:w-auto">
-                Get Started Free
-              </Link>
-              <Link to="/properties" className="bg-primary-700 text-white border border-primary-500 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-primary-800 transition-colors w-full sm:w-auto">
-                Browse Houses
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 };

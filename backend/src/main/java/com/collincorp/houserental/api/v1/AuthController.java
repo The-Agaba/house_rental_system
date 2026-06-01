@@ -84,4 +84,15 @@ public class AuthController {
     public UserResponse updateProfile(@Valid @RequestBody ProfileUpdateRequest request) {
         return authService.updateProfile(request);
     }
+
+    @PostMapping("/resend-verification-code")
+    public ResponseEntity<String> resendVerificationCode(@RequestParam String email) {
+        try {
+            verificationService.resendVerificationCode(email);
+            return ResponseEntity.ok("Verification code sent successfully to " + email);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to send verification email: " + e.getMessage());
+        }
+    }
 }

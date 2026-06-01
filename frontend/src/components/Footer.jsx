@@ -55,14 +55,13 @@ const Footer = () => (
           <ul className="space-y-3.5">
             <li>
               <Link to="/manual" className="text-sm font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-350 transition-colors flex items-center gap-1.5">
-                <Book size={14} className="shrink-0" /> User Manual (PDF)
+                <Book size={14} className="shrink-0" /> User Manual
               </Link>
             </li>
             {[
-              { label: 'Help Center',     to: '/manual#welcome' },
-              { label: 'Safety Center',   to: '/manual#admin' },
-              { label: 'Community Guide', to: '/manual#tenant' },
-              { label: 'Cookie Policy',   to: '/manual#welcome' },
+              { label: 'FAQ',          to: '/manual#welcome' },
+              { label: 'Contact Us',   to: '/manual#admin' },
+              { label: 'Report Issue', to: '/manual#tenant' },
             ].map(({ label, to }) => (
               <li key={label}>
                 <Link to={to} className="text-sm font-medium text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors">{label}</Link>
@@ -99,7 +98,6 @@ const Footer = () => (
           {[
             { label: 'Privacy Policy',   to: '/manual' },
             { label: 'Terms of Service', to: '/manual' },
-            { label: 'Cookie Policy',    to: '/manual' },
           ].map(({ label, to }) => (
             <Link key={label} to={to} className="text-xs font-medium text-slate-400 hover:text-primary-600 transition-colors">{label}</Link>
           ))}
