@@ -19,6 +19,7 @@ import PropertyForm from './pages/PropertyForm';
 import Manual from './pages/Manual';
 import LandlordJoinRequest from './pages/LandlordJoinRequest';
 import LandlordEmailVerify from './pages/LandlordEmailVerify';
+import TenantReservations from './pages/TenantReservations';
 
 const defaultRouteForRole = (role) => (role === 'tenant' ? '/properties' : '/dashboard');
 
@@ -47,6 +48,18 @@ function AppRoutes() {
       <Route path="/dashboard" element={
         <ProtectedRoute roles={['landlord', 'admin', 'agent']}>
           <Dashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/tenant/queue" element={
+        <ProtectedRoute roles={['tenant']}>
+          <TenantReservations mode="queue" />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/tenant/rentals" element={
+        <ProtectedRoute roles={['tenant']}>
+          <TenantReservations mode="rentals" />
         </ProtectedRoute>
       } />
       
