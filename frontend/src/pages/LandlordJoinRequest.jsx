@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, User, Landmark, Building, MapPin, Plus, Trash, ArrowRight, CheckCircle, Home } from 'lucide-react';
+import { Mail, Phone, User, Landmark, Building, MapPin, Plus, Trash, ArrowRight, CheckCircle, Home, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -282,10 +282,10 @@ const LandlordJoinRequest = () => {
             {/* Submit */}
             <button
               type="submit" disabled={submitting}
-              className="btn-primary w-full !py-4 text-base group"
+              className="btn-primary w-full !py-4 text-base group inline-flex items-center justify-center gap-2"
             >
               {submitting
-                ? 'Submitting Application...'
+                ? <><Loader2 className="animate-spin" size={20} /> Submitting Application...</>
                 : <> Submit Join Request <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /> </>
               }
             </button>

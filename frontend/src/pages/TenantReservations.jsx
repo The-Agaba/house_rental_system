@@ -224,10 +224,11 @@ const TenantReservations = ({ mode = 'queue' }) => {
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleReservationAction(item.id, 'cancel')}
-                          className="btn-secondary !py-2.5 !px-5 text-xs"
+                          className="btn-secondary !py-2.5 !px-5 text-xs disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                           disabled={updatingId === item.id}
                         >
-                          <XCircle size={15} /> Cancel
+                          {updatingId === item.id ? <Loader2 className="animate-spin" size={15} /> : <XCircle size={15} />}
+                          {updatingId === item.id ? 'Cancelling...' : 'Cancel'}
                         </button>
                         <button
                           onClick={() => handleReservationAction(item.id, 'confirm')}

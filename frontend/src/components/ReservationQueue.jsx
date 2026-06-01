@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, User, HelpCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Clock, CheckCircle2, User, HelpCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -8,6 +8,8 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
   const [queue, setQueue] = useState(null);
   const { user } = useAuth();
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
   const fetchQueue = async () => {
     try {
@@ -63,6 +65,7 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
   }, [activeReservation]);
 
   const handleConfirm = async (resId) => {
+    setConfirmingId(resId);
     try {
       await axios.put(`/reservations/${resId}/confirm`);
       toast.success('Your reservation is confirmed! Landlord has been notified.');
@@ -71,6 +74,8 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to confirm reservation.';
       toast.error(errMsg);
+    } finally {
+      setConfirmingId(null);
     }
   };
 
@@ -78,6 +83,7 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
     if (!window.confirm('Are you sure you want to cancel your reservation and leave the queue?')) {
       return;
     }
+    setCancellingId(resId);
     try {
       await axios.put(`/reservations/${resId}/cancel`);
       toast.success('Reservation cancelled successfully');
@@ -85,6 +91,8 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
       if (onQueueUpdated) onQueueUpdated();
     } catch (err) {
       toast.error('Failed to cancel reservation');
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -125,15 +133,19 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
             <div className="mt-4 pt-4 border-t border-amber-100/60 dark:border-amber-900/20 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => handleConfirm(activeReservation.id)}
-                className="btn-primary w-full !py-2.5 text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-lg shadow-primary-600/10"
+                disabled={confirmingId === activeReservation.id}
+                className="btn-primary w-full !py-2.5 text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-lg shadow-primary-600/10 disabled:opacity-70 disabled:cursor-wait"
               >
-                <CheckCircle2 size={16} /> Confirm Reservation Now
+                {confirmingId === activeReservation.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                {confirmingId === activeReservation.id ? 'Confirming...' : 'Confirm Reservation Now'}
               </button>
               <button
                 onClick={() => handleCancel(activeReservation.id)}
-                className="btn-secondary w-full sm:w-auto !py-2.5 text-xs font-bold border border-red-200 dark:border-red-950 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/15"
+                disabled={cancellingId === activeReservation.id}
+                className="btn-secondary w-full sm:w-auto !py-2.5 text-xs font-bold border border-red-200 dark:border-red-950 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/15 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
               >
-                Cancel &amp; Exit Queue
+                {cancellingId === activeReservation.id ? <Loader2 className="animate-spin" size={16} /> : null}
+                {cancellingId === activeReservation.id ? 'Cancelling...' : 'Cancel & Exit Queue'}
               </button>
             </div>
           )}
@@ -200,9 +212,11 @@ const ReservationQueue = ({ propertyId, onQueueUpdated }) => {
                   {isMe && res.status === 'queued' && (
                     <button
                       onClick={() => handleCancel(res.id)}
-                      className="text-[10px] font-extrabold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 px-2.5 py-1 rounded-lg transition-all"
+                      disabled={cancellingId === res.id}
+                      className="text-[10px] font-extrabold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 px-2.5 py-1 rounded-lg transition-all disabled:opacity-70 disabled:cursor-wait inline-flex items-center gap-1"
                     >
-                      Leave Queue
+                      {cancellingId === res.id ? <Loader2 className="animate-spin" size={10} /> : null}
+                      {cancellingId === res.id ? 'Leaving...' : 'Leave Queue'}
                     </button>
                   )}
                 </div>

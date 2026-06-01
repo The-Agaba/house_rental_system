@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Check, MailOpen, AlertCircle, Info, Star } from 'lucide-react';
+import { Bell, Check, MailOpen, AlertCircle, Info, Star, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -8,6 +8,8 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [markingReadId, setMarkingReadId] = useState(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
   const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
@@ -41,6 +43,7 @@ const NotificationBell = () => {
 
   const handleMarkAsRead = async (id, e) => {
     e.stopPropagation();
+    setMarkingReadId(id);
     try {
       await axios.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -48,10 +51,13 @@ const NotificationBell = () => {
       toast.success('Notification marked as read');
     } catch (err) {
       console.error('Failed to mark read', err);
+    } finally {
+      setMarkingReadId(null);
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    setMarkingAllRead(true);
     try {
       await axios.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -59,6 +65,8 @@ const NotificationBell = () => {
       toast.success('All notifications marked as read');
     } catch (err) {
       console.error('Failed to mark all read', err);
+    } finally {
+      setMarkingAllRead(false);
     }
   };
 
@@ -104,9 +112,11 @@ const NotificationBell = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1"
+                  disabled={markingAllRead}
+                  className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 disabled:opacity-70 disabled:cursor-wait"
                 >
-                  <MailOpen size={12} /> Mark all read
+                  {markingAllRead ? <Loader2 className="animate-spin" size={12} /> : <MailOpen size={12} />}
+                  {markingAllRead ? 'Marking...' : 'Mark all read'}
                 </button>
               )}
             </div>
@@ -137,10 +147,12 @@ const NotificationBell = () => {
                         {!n.read && (
                           <button
                             onClick={(e) => handleMarkAsRead(n.id, e)}
-                            className="text-[10px] font-extrabold text-primary-600 dark:text-primary-400 hover:underline shrink-0"
+                            disabled={markingReadId === n.id}
+                            className="text-[10px] font-extrabold text-primary-600 dark:text-primary-400 hover:underline shrink-0 disabled:opacity-70 disabled:cursor-wait inline-flex items-center gap-1"
                             title="Mark as read"
                           >
-                            Mark Read
+                            {markingReadId === n.id ? <Loader2 className="animate-spin" size={10} /> : null}
+                            {markingReadId === n.id ? 'Marking...' : 'Mark Read'}
                           </button>
                         )}
                       </div>

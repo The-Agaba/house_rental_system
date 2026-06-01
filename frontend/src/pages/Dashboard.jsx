@@ -462,9 +462,16 @@ const Dashboard = () => {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [acceptingPropertyId, setAcceptingPropertyId] = useState(null);
   const [acceptingReservationId, setAcceptingReservationId] = useState(null);
+  const [cancellingReservationId, setCancellingReservationId] = useState(null);
   const [propertyRequestOpen, setPropertyRequestOpen] = useState(false);
   const [propertyRequestForm, setPropertyRequestForm] = useState({ title: '', location: '' });
   const [submittingPropertyRequest, setSubmittingPropertyRequest] = useState(false);
+  const [deletingPropertyId, setDeletingPropertyId] = useState(null);
+  const [denyingPropertyId, setDenyingPropertyId] = useState(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [rejectingRequestId, setRejectingRequestId] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark')
@@ -639,12 +646,15 @@ const Dashboard = () => {
 
   const handleDeleteProperty = async (id) => {
     if (!window.confirm('Delete this listing permanently?')) return;
+    setDeletingPropertyId(id);
     try {
       await axios.delete(`/properties/${id}`);
       toast.success('Listing removed successfully');
       fetchDashboardData();
     } catch (err) {
       toast.error('Failed to delete listing');
+    } finally {
+      setDeletingPropertyId(null);
     }
   };
 
@@ -700,12 +710,15 @@ const Dashboard = () => {
 
   const handleDenyProperty = async (propertyId) => {
     if (!window.confirm('Deny and remove this submitted listing?')) return;
+    setDenyingPropertyId(propertyId);
     try {
       await axios.delete(`/properties/${propertyId}`);
       toast.success('Property denied and removed');
       fetchDashboardData();
     } catch (err) {
       toast.error('Failed to deny property');
+    } finally {
+      setDenyingPropertyId(null);
     }
   };
 
@@ -738,6 +751,7 @@ const Dashboard = () => {
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
+    setSavingUser(true);
     try {
       if (userForm.id) {
         await axios.put(`/admin/users/${userForm.id}`, {
@@ -767,6 +781,8 @@ const Dashboard = () => {
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to save user';
       toast.error(errorMsg);
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -776,6 +792,7 @@ const Dashboard = () => {
       return;
     }
     if (!window.confirm(`Are you sure you want to delete user ${userEmail}?`)) return;
+    setDeletingUserId(userId);
     try {
       await axios.delete(`/admin/users/${userId}`);
       toast.success('User deleted successfully');
@@ -787,11 +804,17 @@ const Dashboard = () => {
       } else {
         toast.error(errorMsg);
       }
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
   const handleReservationAction = async (reservationId, status) => {
     if (status === 'accepted') {
+      setAcceptingReservationId(reservationId);
+    } else if (status === 'cancelled') {
+      setCancellingReservationId(reservationId);
+    } else if (status === 'confirmed') {
       setAcceptingReservationId(reservationId);
     }
     try {
@@ -856,6 +879,10 @@ const Dashboard = () => {
     } finally {
       if (status === 'accepted') {
         setAcceptingReservationId(null);
+      } else if (status === 'cancelled') {
+        setCancellingReservationId(null);
+      } else if (status === 'confirmed') {
+        setAcceptingReservationId(null);
       }
     }
   };
@@ -914,12 +941,15 @@ const Dashboard = () => {
   const handleRejectLandlordRequest = async (request) => {
     const reason = window.prompt('Reason for rejection:', 'Documents could not be verified');
     if (!reason) return;
+    setRejectingRequestId(request.id);
     try {
       await axios.put(`/landlord-requests/${request.id}/reject`, null, { params: { reason } });
       toast.success('Landlord request rejected');
       fetchDashboardData();
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to reject landlord request');
+    } finally {
+      setRejectingRequestId(null);
     }
   };
 
@@ -938,10 +968,17 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogoutClick = () => {
-    logout();
-    toast.success('Signed out successfully');
-    navigate('/login');
+  const handleLogoutClick = async () => {
+    setLoggingOut(true);
+    try {
+      logout();
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } catch (err) {
+      toast.error('Failed to sign out');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const getSidebarTabs = () => {
@@ -1137,11 +1174,13 @@ const Dashboard = () => {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={handleLogoutClick}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-50 hover:bg-rose-50 border border-slate-100 hover:border-rose-100 dark:bg-white/5 dark:hover:bg-rose-500/10 dark:border-white/10 dark:hover:border-rose-500/30 text-slate-500 hover:text-rose-500 text-xs font-bold uppercase tracking-wider transition-all"
+            disabled={loggingOut}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-50 hover:bg-rose-50 border border-slate-100 hover:border-rose-100 dark:bg-white/5 dark:hover:bg-rose-500/10 dark:border-white/10 dark:hover:border-rose-500/30 text-slate-500 hover:text-rose-500 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-70 disabled:cursor-wait"
           >
-            <LogOut size={14} /> Sign Out
+            {loggingOut ? <Loader2 className="animate-spin" size={14} /> : <LogOut size={14} />}
+            {loggingOut ? 'Signing Out...' : 'Sign Out'}
           </button>
         </div>
       </aside>
@@ -1232,11 +1271,13 @@ const Dashboard = () => {
               </div>
 
               <div className="space-y-4 border-t border-slate-100 dark:border-slate-900 pt-6">
-                <button 
+                <button
                   onClick={handleLogoutClick}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 text-slate-500 text-xs font-bold uppercase tracking-wider"
+                  disabled={loggingOut}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 text-slate-500 text-xs font-bold uppercase tracking-wider disabled:opacity-70 disabled:cursor-wait"
                 >
-                  <LogOut size={14} /> Sign Out
+                  {loggingOut ? <Loader2 className="animate-spin" size={14} /> : <LogOut size={14} />}
+                  {loggingOut ? 'Signing Out...' : 'Sign Out'}
                 </button>
               </div>
             </motion.aside>
@@ -1423,9 +1464,11 @@ const Dashboard = () => {
                               </button>
                               <button
                                 onClick={() => handleDenyProperty(prop.id)}
-                                className="py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold transition-all shadow-sm dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40"
+                                disabled={denyingPropertyId === prop.id}
+                                className="py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold transition-all shadow-sm dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                               >
-                                Deny
+                                {denyingPropertyId === prop.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                                {denyingPropertyId === prop.id ? 'Denying...' : 'Deny'}
                               </button>
                             </div>
                           </div>
@@ -1777,9 +1820,11 @@ const Dashboard = () => {
                                 </button>
                                 <button
                                   onClick={() => handleDenyProperty(prop.id)}
-                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40"
+                                  disabled={denyingPropertyId === prop.id}
+                                  className="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 dark:bg-slate-950 dark:hover:bg-rose-950/20 dark:border-rose-900/40 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1"
                                 >
-                                  Deny
+                                  {denyingPropertyId === prop.id ? <Loader2 className="animate-spin" size={12} /> : null}
+                                  {denyingPropertyId === prop.id ? 'Denying...' : 'Deny'}
                                 </button>
                               </>
                             )}
@@ -1787,8 +1832,12 @@ const Dashboard = () => {
                               <Edit3 size={16} />
                             </Link>
                             {user.role !== 'landlord' && (
-                              <button onClick={() => handleDeleteProperty(prop.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95">
-                                <Trash2 size={16} />
+                              <button 
+                                onClick={() => handleDeleteProperty(prop.id)} 
+                                disabled={deletingPropertyId === prop.id}
+                                className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all shadow-sm hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+                              >
+                                {deletingPropertyId === prop.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
                               </button>
                             )}
                           </div>
@@ -1883,15 +1932,16 @@ const Dashboard = () => {
                               </button>
                               <button
                                 onClick={() => handleDeleteUser(u.id, u.email, canDelete)}
-                                disabled={u.id === user.id}
+                                disabled={u.id === user.id || deletingUserId === u.id}
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all border ${
                                   u.id === user.id ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-700 border-transparent cursor-not-allowed' :
+                                  deletingUserId === u.id ? 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-wait' :
                                   canDelete ? 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-500 border-slate-100 dark:border-slate-700' :
                                   'bg-slate-100 dark:bg-slate-800 text-slate-350 dark:text-slate-700 border-transparent cursor-not-allowed'
                                 }`}
                                 title={u.id === user.id ? "Cannot delete yourself" : canDelete ? "Delete User" : `Food Chain Rule: Only the admin who created them (${creatorEmail}) can delete them`}
                               >
-                                <Trash2 size={14} />
+                                {deletingUserId === u.id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
                               </button>
                             </div>
                           </td>
@@ -2117,8 +2167,13 @@ const Dashboard = () => {
 
                           {(request.status === 'assigned' || request.status === 'verified') && (
                             <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-5 border-t border-slate-200/70 dark:border-slate-800">
-                              <button onClick={() => handleRejectLandlordRequest(request)} className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold">
-                                Reject
+                              <button
+                                onClick={() => handleRejectLandlordRequest(request)}
+                                disabled={rejectingRequestId === request.id}
+                                className="btn-secondary !rounded-[1.2rem] !py-3 !px-6 text-xs font-bold disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
+                              >
+                                {rejectingRequestId === request.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                                {rejectingRequestId === request.id ? 'Rejecting...' : 'Reject'}
                               </button>
                               <button onClick={() => handleOpenApprovalModal(request)} className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold">
                                 Approve Request
@@ -2237,26 +2292,32 @@ const Dashboard = () => {
                           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <button
                               onClick={() => handleReservationAction(book.id, 'cancelled')}
-                              className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95"
+                              disabled={cancellingReservationId === book.id}
+                              className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                             >
-                              Cancel
+                              {cancellingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                              {cancellingReservationId === book.id ? 'Cancelling...' : 'Cancel'}
                             </button>
                             <button
                               onClick={() => handleReservationAction(book.id, 'confirmed')}
-                              className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10"
+                              disabled={acceptingReservationId === book.id}
+                              className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                             >
-                              Confirm Reservation
+                              {acceptingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                              {acceptingReservationId === book.id ? 'Confirming...' : 'Confirm Reservation'}
                             </button>
                           </div>
                         )}
 
                         {user.role === 'landlord' && ['queued', 'awaiting_confirmation', 'confirmed'].includes(book.status) && (
                           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <button 
-                              onClick={() => handleReservationAction(book.id, 'cancelled')} 
-                              className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95"
+                            <button
+                              onClick={() => handleReservationAction(book.id, 'cancelled')}
+                              disabled={cancellingReservationId === book.id}
+                              className="btn-secondary !rounded-[1.2rem] !py-2.5 !px-6 text-xs font-bold active:scale-95 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                             >
-                              Deny
+                              {cancellingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                              {cancellingReservationId === book.id ? 'Denying...' : 'Deny'}
                             </button>
                             {book.status === 'confirmed' && (
                               <button 
@@ -2498,9 +2559,11 @@ const Dashboard = () => {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold"
+                    disabled={savingUser}
+                    className="btn-primary !rounded-[1.2rem] !py-3 !px-8 text-xs font-bold disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
                   >
-                    {userForm.id ? 'Save User' : 'Create User'}
+                    {savingUser ? <Loader2 className="animate-spin" size={14} /> : null}
+                    {savingUser ? (userForm.id ? 'Saving...' : 'Creating...') : (userForm.id ? 'Save User' : 'Create User')}
                   </button>
                 </div>
               </form>
