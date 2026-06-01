@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Home, Search, LayoutDashboard, LogOut, Menu, X,
-  PlusCircle, Sun, Moon, KeyRound
+  PlusCircle, Sun, Moon, KeyRound, ListOrdered, House
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +41,11 @@ const Navbar = () => {
     { name: 'Properties', path: '/properties', icon: <Search size={16} /> },
   ];
 
+  const tenantLinks = user?.role === 'tenant' ? [
+    { name: 'My Queue', path: '/tenant/queue', icon: <ListOrdered size={16} /> },
+    { name: 'My Rentals', path: '/tenant/rentals', icon: <House size={16} /> },
+  ] : [];
+
   const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
@@ -67,6 +72,19 @@ const Navbar = () => {
           {/* Links */}
           <div className="flex items-center gap-6">
             {navLinks.map(l => (
+              <Link
+                key={l.path}
+                to={l.path}
+                className={`flex items-center gap-1.5 text-sm font-semibold transition-colors py-1 border-b-2 ${
+                  isActive(l.path)
+                    ? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
+                    : 'text-slate-600 border-transparent hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                }`}
+              >
+                {l.icon} {l.name}
+              </Link>
+            ))}
+            {tenantLinks.map(l => (
               <Link
                 key={l.path}
                 to={l.path}
@@ -178,6 +196,22 @@ const Navbar = () => {
           >
             <div className="container py-6 flex flex-col gap-2">
               {navLinks.map(l => (
+                <Link
+                  key={l.path}
+                  to={l.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-colors ${
+                    isActive(l.path)
+                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isActive(l.path) ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    {l.icon}
+                  </div>
+                  {l.name}
+                </Link>
+              ))}
+              {tenantLinks.map(l => (
                 <Link
                   key={l.path}
                   to={l.path}
