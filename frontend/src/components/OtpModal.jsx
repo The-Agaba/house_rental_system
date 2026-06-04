@@ -49,7 +49,7 @@ const OtpModal = ({ isOpen, email, onClose }) => {
     try {
       await verifyEmail(email, code);
       // Verification succeeded — send user to login manually
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch {
       // toast already shown in context; reset digits so user can retry
       setDigits(['', '', '', '', '', '']);

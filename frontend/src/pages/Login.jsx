@@ -17,7 +17,7 @@ const Login = () => {
     setSubmitting(true);
     try {
       const userData = await login(email, password);
-      navigate(userData.role === 'tenant' ? '/properties' : '/dashboard');
+      navigate(userData.role === 'tenant' ? '/properties' : '/dashboard', { replace: true });
     } catch {
       // toast handled in context
     } finally {
