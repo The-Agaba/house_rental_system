@@ -69,6 +69,12 @@ public class PropertyEntity {
     @Column(length = 255)
     private String contactEmail;
 
+    @Column(name = "average_rating", precision = 3, scale = 2, nullable = false)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "review_count", nullable = false)
+    private long reviewCount = 0;
+
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PropertyImageEntity> images = new ArrayList<>();
 
@@ -187,5 +193,21 @@ public class PropertyEntity {
 
     public void setContactEmail(String contactEmail) {
         this.contactEmail = contactEmail;
+    }
+
+    public BigDecimal getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public long getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(long reviewCount) {
+        this.reviewCount = reviewCount;
     }
 }

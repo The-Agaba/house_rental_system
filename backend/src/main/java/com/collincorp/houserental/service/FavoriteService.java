@@ -85,6 +85,8 @@ public class FavoriteService {
                 p.getPhone(),
                 p.getContactEmail(),
                 bookingCount,
+                p.getAverageRating(),
+                p.getReviewCount(),
                 p.isNeedsImages(),
                 p.getRegisteredByAgent() != null ? p.getRegisteredByAgent().getId() : null);
     }

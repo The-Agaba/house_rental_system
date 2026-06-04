@@ -1564,6 +1564,10 @@ const Dashboard = () => {
                                 <div className="min-w-0">
                                   <p className="font-bold text-slate-900 dark:text-white truncate">{prop.title}</p>
                                   <p className="text-[9px] text-slate-400 truncate">{prop.location}</p>
+                                  <p className="text-[9px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                                    <Star size={10} className="text-amber-500" fill={Number(prop.reviewCount || 0) > 0 ? 'currentColor' : 'none'} />
+                                    {Number(prop.reviewCount || 0) > 0 ? Number(prop.averageRating || 0).toFixed(1) : 'New'} ({Number(prop.reviewCount || 0)})
+                                  </p>
                                 </div>
                               </div>
                               <span className="text-[9px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full shrink-0">
@@ -1678,6 +1682,11 @@ const Dashboard = () => {
                             <MapPin size={12} className="text-primary-500 shrink-0" />
                             <span className="line-clamp-1">{prop.location}</span>
                           </div>
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-4">
+                            <Star size={13} className="text-amber-500" fill={Number(prop.reviewCount || 0) > 0 ? 'currentColor' : 'none'} />
+                            <span>{Number(prop.reviewCount || 0) > 0 ? Number(prop.averageRating || 0).toFixed(1) : 'New'}</span>
+                            <span className="font-medium">({Number(prop.reviewCount || 0)} reviews)</span>
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
@@ -1788,6 +1797,11 @@ const Dashboard = () => {
                           <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider mb-4">
                             <MapPin size={12} className="text-primary-500 shrink-0" />
                             <span className="line-clamp-1">{prop.location}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-4">
+                            <Star size={13} className="text-amber-500" fill={Number(prop.reviewCount || 0) > 0 ? 'currentColor' : 'none'} />
+                            <span>{Number(prop.reviewCount || 0) > 0 ? Number(prop.averageRating || 0).toFixed(1) : 'New'}</span>
+                            <span className="font-medium">({Number(prop.reviewCount || 0)} reviews)</span>
                           </div>
                           {user.role === 'landlord' && (
                             <div className={`mb-4 rounded-2xl px-4 py-3 text-[11px] font-semibold leading-relaxed ${

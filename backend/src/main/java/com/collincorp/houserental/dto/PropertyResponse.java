@@ -20,5 +20,7 @@ public record PropertyResponse(
         String phone,
         String contactEmail,
         long bookingCount,
+        BigDecimal averageRating,
+        long reviewCount,
         boolean needsImages,
         Long registeredByAgentId) {}

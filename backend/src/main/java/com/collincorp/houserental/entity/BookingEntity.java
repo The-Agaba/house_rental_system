@@ -47,6 +47,9 @@ public class BookingEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(name = "feedback_email_sent_at")
+    private Instant feedbackEmailSentAt;
+
     public Long getId() {
         return id;
     }
@@ -105,5 +108,13 @@ public class BookingEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getFeedbackEmailSentAt() {
+        return feedbackEmailSentAt;
+    }
+
+    public void setFeedbackEmailSentAt(Instant feedbackEmailSentAt) {
+        this.feedbackEmailSentAt = feedbackEmailSentAt;
     }
 }

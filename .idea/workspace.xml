@@ -5,10 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1130bfe6-f1a2-4c70-9fe1-f758a26b7a39" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/LandlordOnboardingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/LogAction.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/LogAction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/NotificationType.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/domain/NotificationType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/PropertyResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/dto/PropertyResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/BookingEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/BookingEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/PropertyEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/entity/PropertyEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/repository/BookingRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/repository/BookingRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/FavoriteService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/FavoriteService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/PropertyService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/collincorp/houserental/service/PropertyService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/assets/index-CLf3Hah1.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/assets/index-GfhFWj3r.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/static/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/static/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Dashboard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Properties.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Properties.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/PropertyDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/PropertyDetail.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,7 +27,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="220" />
+    <option name="cachedIndexableFilesCount" value="311" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -34,12 +45,12 @@
     &quot;assignee&quot;: &quot;wartwasg&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/The-Agaba/house_rental_system&quot;,
-    &quot;accountId&quot;: &quot;c0b0211b-90bc-414c-870a-748661ac87d6&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/The-Agaba/house_rental_system.git",
+    "accountId": "2b0dab39-eb71-473c-9608-f45ae43d3de6"
   }
-}</component>
+}]]></component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -137,15 +148,18 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.HouseRentalApplication.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "Dominic",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Dev/SpringBoot/GroupWorks/P1/Phase 2/house_rental_system",
+    "last_opened_file_path": "C:/Users/colli/Documents/GitHub/house_rental_system",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>

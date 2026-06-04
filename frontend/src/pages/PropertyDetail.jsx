@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Bed, Banknote, ShieldCheck, ChevronLeft,
   Star, CheckCircle2, Shield, Share2, Heart,
-  Maximize2, Loader2, Wifi, Car, Trees, Wind, ListOrdered
+  Maximize2, Loader2, Wifi, Car, Trees, Wind, ListOrdered, X, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -26,6 +26,7 @@ const AMENITIES = [
 const PropertyDetail = () => {
   const { id }     = useParams();
   const navigate   = useNavigate();
+  const location   = useLocation();
   const { user }   = useAuth();
 
   const [property, setProperty] = useState(null);
@@ -33,6 +34,14 @@ const PropertyDetail = () => {
   const [activeImg, setActiveImg] = useState(0);
   const [sending,  setSending]  = useState(false);
   const [liked,    setLiked]    = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [promptedReviewKey, setPromptedReviewKey] = useState(null);
+  const [allReviewsModalOpen, setAllReviewsModalOpen] = useState(false);
 
   const [moveInDate, setMoveInDate] = useState('');
   const [durationMonths, setDurationMonths] = useState(3);
@@ -44,6 +53,8 @@ const PropertyDetail = () => {
       try {
         const res = await axios.get(`/properties/${id}`, { timeout: 4000 });
         setProperty(res.data);
+        const reviewRes = await axios.get(`/properties/${id}/reviews`, { timeout: 4000 });
+        setReviews(reviewRes.data || []);
       } catch {
         toast.error('Property not found'); navigate('/properties');
       } finally {
@@ -52,6 +63,45 @@ const PropertyDetail = () => {
     };
     fetch();
   }, [id, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const requestedFromEmail = params.get('review') === '1';
+    const promptKey = `${id}:${user?.id || 'guest'}`;
+
+    if (!property || promptedReviewKey === promptKey) return;
+    if (!user) {
+      if (requestedFromEmail) {
+        toast.error('Please log in as the tenant who rented this property to leave a review.');
+      }
+      return;
+    }
+    if (user.role !== 'tenant') return;
+
+    const checkEligibility = async () => {
+      try {
+        const res = await axios.get(`/properties/${id}/reviews/eligibility`, { timeout: 4000 });
+        setReviewEligibility(res.data);
+        if (res.data?.eligible) {
+          setPromptedReviewKey(promptKey);
+          toast.success('Your rental is complete. Please rate your RentHub experience.');
+          setTimeout(() => setReviewModalOpen(true), 500);
+        } else if (requestedFromEmail && res.data?.alreadyReviewed) {
+          setPromptedReviewKey(promptKey);
+          toast('You already submitted a verified review for this rental.');
+        } else if (requestedFromEmail) {
+          setPromptedReviewKey(promptKey);
+          toast.error('Only tenants with a completed approved rental for this property can review it.');
+        }
+      } catch (err) {
+        if (requestedFromEmail) {
+          toast.error(err.response?.data?.message || 'Unable to verify your review eligibility.');
+        }
+      }
+    };
+
+    checkEligibility();
+  }, [id, location.search, property, promptedReviewKey, user]);
 
   const handleJoinQueue = async (e) => {
     e.preventDefault();
@@ -75,6 +125,41 @@ const PropertyDetail = () => {
     }
   };
 
+  const refreshPropertyAndReviews = async () => {
+    const [propertyRes, reviewRes] = await Promise.all([
+      axios.get(`/properties/${id}`),
+      axios.get(`/properties/${id}/reviews`)
+    ]);
+    setProperty(propertyRes.data);
+    setReviews(reviewRes.data || []);
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (reviewRating < 1 || reviewRating > 5) {
+      toast.error('Choose a rating from 1 to 5 stars.');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      await axios.post(`/properties/${id}/reviews`, {
+        rating: reviewRating,
+        comment: reviewComment.trim() || null
+      });
+      toast.success('Your verified review was submitted.');
+      setReviewModalOpen(false);
+      setReviewRating(0);
+      setReviewComment('');
+      setReviewEligibility({ eligible: false, alreadyReviewed: true, bookingId: null, reason: 'already_reviewed' });
+      await refreshPropertyAndReviews();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Review could not be submitted.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
       <Loader2 className="animate-spin text-primary-600" size={40} />
@@ -85,6 +170,9 @@ const PropertyDetail = () => {
   if (!property) return null;
 
   const canReserve = !user || user.role === 'tenant';
+  const averageRating = Number(property.averageRating || 0);
+  const reviewCount = Number(property.reviewCount || 0);
+  const ratingLabel = reviewCount > 0 ? `${averageRating.toFixed(1)} / 5` : 'No reviews';
 
   const images = property.images?.length
     ? property.images.map(i => i.filePath)
@@ -196,7 +284,7 @@ const PropertyDetail = () => {
                 { label: 'Bedrooms',   value: property.rooms,   icon: Bed         },
                 { label: 'Monthly',    value: formatTzs(property.pricePerMonth), icon: Banknote },
                 { label: 'Queue',      value: property.bookingCount || 0, icon: ListOrdered },
-                { label: 'Rating',     value: '4.9 / 5',        icon: Star        },
+                { label: 'Rating',     value: ratingLabel,        icon: Star        },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="card p-4 text-center">
                   <Icon size={20} className="text-primary-500 mx-auto mb-2" />
@@ -228,6 +316,55 @@ const PropertyDetail = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Reviews */}
+          <div className="card p-6 md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                  <Star size={20} className="text-amber-500" fill="currentColor" /> Verified Tenant Reviews
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {reviewCount > 0 ? `${ratingLabel} from ${reviewCount} verified rental review${reviewCount === 1 ? '' : 's'}` : 'No verified rental reviews yet.'}
+                </p>
+              </div>
+              {reviewEligibility?.eligible && (
+                <button onClick={() => setReviewModalOpen(true)} className="btn-secondary !py-2.5">
+                  <Star size={16} /> Rate Your Stay
+                </button>
+              )}
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Reviews will appear here after former tenants submit verified feedback.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.slice(0, 3).map(review => (
+                  <div key={review.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white">{review.tenantName}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Verified rental review</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-500">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <Star key={idx} size={15} fill={idx < review.rating ? 'currentColor' : 'none'} />
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+                {reviews.length > 3 && (
+                  <button onClick={() => setAllReviewsModalOpen(true)} className="btn-secondary w-full !py-3">
+                    Show all {reviews.length} reviews
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -307,6 +444,129 @@ const PropertyDetail = () => {
         </div>
 
       </div>
+
+      <AnimatePresence>
+        {reviewModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4 py-8"
+          >
+            <motion.form
+              onSubmit={handleReviewSubmit}
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 md:p-7"
+            >
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Verified rental review</p>
+                  <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white">Rate your stay</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{property.title}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewModalOpen(false)}
+                  className="w-10 h-10 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Rating is required</label>
+                <div className="flex gap-2">
+                  {Array.from({ length: 5 }).map((_, idx) => {
+                    const value = idx + 1;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setReviewRating(value)}
+                        className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                        aria-label={`Rate ${value} star${value === 1 ? '' : 's'}`}
+                      >
+                        <Star size={26} fill={reviewRating >= value ? 'currentColor' : 'none'} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Comment optional</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value.slice(0, 1000))}
+                  className="input-field min-h-32 resize-none"
+                  placeholder="Share what future tenants should know about this rental."
+                  maxLength={1000}
+                />
+                <p className="text-[11px] text-slate-400 mt-2">{reviewComment.length}/1000</p>
+              </div>
+
+              <button type="submit" disabled={submittingReview || reviewRating < 1} className="btn-primary w-full !py-4">
+                {submittingReview ? <Loader2 className="animate-spin" size={18} /> : <><Send size={17} /> Submit Verified Review</>}
+              </button>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {allReviewsModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4 py-8"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              className="w-full max-w-2xl max-h-full flex flex-col rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 md:p-7"
+            >
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white">All Reviews</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{property.title}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAllReviewsModalOpen(false)}
+                  className="w-10 h-10 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto space-y-4 pr-2 no-scrollbar">
+                {reviews.map(review => (
+                  <div key={review.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white">{review.tenantName}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Verified rental review</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-500">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <Star key={idx} size={15} fill={idx < review.rating ? 'currentColor' : 'none'} />
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

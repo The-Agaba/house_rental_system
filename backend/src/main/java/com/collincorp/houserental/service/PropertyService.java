@@ -266,6 +266,8 @@ public class PropertyService {
                 includeContactDetails ? p.getPhone() : null,
                 includeContactDetails ? p.getContactEmail() : null,
                 bookingCount,
+                p.getAverageRating(),
+                p.getReviewCount(),
                 p.isNeedsImages(),
                 p.getRegisteredByAgent() != null ? p.getRegisteredByAgent().getId() : null);
     }

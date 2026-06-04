@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, MapPin, Bed, Banknote, Filter, SlidersHorizontal,
-  Loader2, ChevronRight, LayoutGrid, List as ListIcon, X, ChevronDown
+  Loader2, ChevronRight, LayoutGrid, List as ListIcon, X, ChevronDown, Star
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,8 @@ const isStaffRole = (role) => ['landlord', 'agent', 'admin'].includes(role);
 const GridCard = ({ prop, i, allowViewLink }) => {
   const Wrapper = allowViewLink ? Link : 'div';
   const wrapperProps = allowViewLink ? { to: `/properties/${prop.id}` } : {};
+  const reviewCount = Number(prop.reviewCount || 0);
+  const ratingLabel = reviewCount > 0 ? Number(prop.averageRating || 0).toFixed(1) : 'New';
 
   return (
   <motion.div
@@ -49,6 +51,12 @@ const GridCard = ({ prop, i, allowViewLink }) => {
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm mb-4">
           <MapPin size={13} className="text-primary-500 shrink-0" />
           <span className="line-clamp-1">{prop.location}</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">
+          <Star size={15} className="text-amber-500" fill={reviewCount > 0 ? 'currentColor' : 'none'} />
+          <span>{ratingLabel}</span>
+          <span className="text-xs font-medium text-slate-400">({reviewCount})</span>
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -87,6 +95,8 @@ const Skeleton = () => (
 const ListCard = ({ prop, i, allowViewLink }) => {
   const Wrapper = allowViewLink ? Link : 'div';
   const wrapperProps = allowViewLink ? { to: `/properties/${prop.id}` } : {};
+  const reviewCount = Number(prop.reviewCount || 0);
+  const ratingLabel = reviewCount > 0 ? Number(prop.averageRating || 0).toFixed(1) : 'New';
 
   return (
   <motion.div
@@ -125,8 +135,13 @@ const ListCard = ({ prop, i, allowViewLink }) => {
         <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-6 leading-relaxed">{prop.description}</p>
 
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            <Bed size={16} className="text-primary-500" /> {prop.rooms} Bedrooms
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <Bed size={16} className="text-primary-500" /> {prop.rooms} Bedrooms
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Star size={15} className="text-amber-500" fill={reviewCount > 0 ? 'currentColor' : 'none'} /> {ratingLabel} ({reviewCount})
+            </span>
           </div>
           {allowViewLink && (
             <span className="btn-primary !py-2 !px-5 text-sm">

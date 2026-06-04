@@ -135,8 +135,8 @@ async function runTests() {
       headers: { Authorization: `Bearer ${tenantToken}` },
       body: JSON.stringify({
         propertyId,
-        startDate: '2026-07-01',
-        endDate: '2026-07-31',
+        startDate: '2026-05-01',
+        endDate: '2026-06-01',
         message: 'Automated booking request.',
       }),
     });
@@ -164,6 +164,24 @@ async function runTests() {
       body: JSON.stringify({ status: 'approved' }),
     });
     assert(approvedBooking.response.status === 200 && approvedBooking.body.status === 'approved', 'Landlord approves booking');
+
+    const reviewEligibility = await request(`/properties/${propertyId}/reviews/eligibility`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${tenantToken}` }
+    });
+    assert(reviewEligibility.response.status === 200 && reviewEligibility.body.eligible === true, 'Tenant is eligible to review after lease ends');
+
+    const submitReview = await request(`/properties/${propertyId}/reviews`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tenantToken}` },
+      body: JSON.stringify({ rating: 5, comment: 'Excellent property, highly recommend.' })
+    });
+    assert(submitReview.response.status === 200 && submitReview.body.rating === 5, 'Tenant submits verified review successfully');
+
+    const propertyDetails = await request(`/properties/${propertyId}`, {
+      method: 'GET'
+    });
+    assert(propertyDetails.response.status === 200 && propertyDetails.body.averageRating === 5 && propertyDetails.body.reviewCount === 1, 'Property average rating is recalculated automatically');
 
     const logs = await request('/admin/logs', {
       headers: { Authorization: `Bearer ${adminToken}` },

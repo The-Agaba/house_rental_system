@@ -56,7 +56,11 @@ public class EmailVerificationService {
                 "Do not share this code with anyone.\n\n" +
                 "Once verified, you can log in with your credentials and manage your properties.\n\n" +
                 "Need help? Contact our support team at support@rentalhub.com");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+        }
     }
 
     public boolean verifyLandlordCode(String email, String code) {
@@ -85,10 +89,12 @@ public class EmailVerificationService {
         message.setSubject("Complete Your Registration - Verification Code");
         message.setText("Your 6-digit registration verification code is: " + code+"\n"+
          "Please Do not share with anyone , this is for security purpose "+"\n"+"\n"+" "+
-                "!!! Warning Use it Before exipiration time and if it expired request new verification code."
-        );
-
-        mailSender.send(message);
+                "!!! Warning Use it Before exipiration time and if it expired request new verification code.");
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+        }
     }
 
     public boolean verifyCode(String email, String code) {
@@ -127,7 +133,11 @@ public class EmailVerificationService {
                 "This code will expire after one attempt or after a certain time period. " +
                 "Do not share this code with anyone.\n\n" +
                 "If you did not request this code, please ignore this email.");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+        }
         
         return newCode;
     }
@@ -161,7 +171,11 @@ public class EmailVerificationService {
                 "Do not share this code with anyone.\n\n" +
                 "Once verified, you can log in with your credentials and manage your properties.\n\n" +
                 "Need help? Contact our support team at support@rentalhub.com");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+        }
         
         return newCode;
     }
@@ -197,6 +211,10 @@ public class EmailVerificationService {
                 "NEED HELP?\n" +
                 "Contact our support team at support@rentalhub.com or visit https://rentalhub.com/manual\n\n" +
                 "Welcome to the RentHub community!");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+        }
     }
 }
