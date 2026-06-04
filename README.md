@@ -115,7 +115,7 @@ npm run dev
 
 ## 📸 Sneak Peek
 
-*(Add your screenshots here! Replace the placeholder URLs with actual paths to your images, e.g., `./docs/dashboard.png`)*
+
 
 | Marketplace | Dashboard Analytics |
 | :---: | :---: |
@@ -138,6 +138,6 @@ RentalHub strictly enforces routing based on roles to ensure data integrity:
 
 <div align="center">
 
-**Built with ❤️ for Modern Real Estate Management**
+
 
 </div>
