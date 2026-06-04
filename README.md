@@ -119,7 +119,7 @@ npm run dev
 
 | Marketplace | Dashboard Analytics |
 | :---: | :---: |
-| <img src="https://placehold.co/600x400/1e293b/ffffff?text=Marketplace+Preview" alt="Marketplace" width="100%"> | <img src="https://placehold.co/600x400/1e293b/ffffff?text=Dynamic+Dashboard" alt="Dashboard" width="100%"> |
+| <img src="./images/marketplace.png" alt="Marketplace" width="100%"> | <img src="./images/dashboard.png" alt="Dashboard" width="100%"> |
 
 <br/>
 
