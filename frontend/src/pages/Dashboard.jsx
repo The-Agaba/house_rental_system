@@ -61,10 +61,10 @@ const StripedBarChart = ({ title, counts, todayIndex }) => {
         </div>
         <div className="flex gap-4 items-center">
           <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 inline-block" /> Inquiries
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 inline-block" /> Inquiries: {counts.reduce((a, b) => a + b, 0)}
           </span>
           <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-            <span className="w-2.5 h-2.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 inline-block" /> Idle Days
+            <span className="w-2.5 h-2.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 inline-block" /> Idle Days: {counts.filter(c => c === 0).length}
           </span>
         </div>
       </div>
@@ -444,6 +444,7 @@ const Dashboard = () => {
   // Tab states: 'overview' | 'listings' | 'bookings' | 'requests' | 'settings' | 'logs' | 'users' | 'marketplace'
   const [activeTab, setActiveTab] = useState('overview');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Approval Modal States
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -1041,24 +1042,24 @@ const Dashboard = () => {
   const getDynamicMetrics = () => {
     if (user.role === 'landlord') {
       return [
-        { label: 'Active Listings', value: totalPropsCount, desc: `${totalPropsCount - rentedPropsCount} available for lease`, highlight: true },
-        { label: 'Occupied Units', value: rentedPropsCount, desc: `${rentedPropsCount} leased properties` },
-        { label: 'Estimated Revenue', value: formatTzs(landlordMonthlyRevenue), desc: 'Total monthly occupied rent' },
-        { label: 'Ready to Accept', value: landlordPendingRequests, desc: `${landlordPendingRequests} confirmed reservations` }
+        { label: 'Active Listings', value: totalPropsCount, desc: `${totalPropsCount - rentedPropsCount} available for lease`, highlight: true, tab: 'listings' },
+        { label: 'Occupied Units', value: rentedPropsCount, desc: `${rentedPropsCount} leased properties`, tab: 'listings' },
+        { label: 'Estimated Revenue', value: formatTzs(landlordMonthlyRevenue), desc: 'Total monthly occupied rent', tab: 'bookings' },
+        { label: 'Ready to Accept', value: landlordPendingRequests, desc: `${landlordPendingRequests} confirmed reservations`, tab: 'bookings' }
       ];
     } else if (user.role === 'admin') {
       return [
-        { label: 'Total Properties', value: totalPropsCount, desc: 'Active units in database', highlight: true },
-        { label: 'Total Users', value: data.users?.length || 0, desc: 'Registered accounts' },
-        { label: 'Reservations', value: data.bookings.length, desc: 'Queue records' }
+        { label: 'Total Properties', value: totalPropsCount, desc: 'Active units in database', highlight: true, tab: 'listings' },
+        { label: 'Total Users', value: data.users?.length || 0, desc: 'Registered accounts', tab: 'users' },
+        { label: 'Reservations', value: data.bookings.length, desc: 'Queue records', tab: 'bookings' }
       ];
     } else {
       // Tenant
       return [
-        { label: 'Accepted Leases', value: tenantApprovedLeases, desc: 'Reservations accepted', highlight: true },
-        { label: 'Queue Entries', value: data.bookings.length, desc: 'Total reservation attempts' },
-        { label: 'Awaiting Turn', value: tenantPendingRequests, desc: `${tenantPendingRequests} active queue records` },
-        { label: 'Committed Cost', value: formatTzs(tenantMonthlyCommitment), desc: 'Accepted reservation cost' }
+        { label: 'Accepted Leases', value: tenantApprovedLeases, desc: 'Reservations accepted', highlight: true, tab: 'bookings' },
+        { label: 'Queue Entries', value: data.bookings.length, desc: 'Total reservation attempts', tab: 'bookings' },
+        { label: 'Awaiting Turn', value: tenantPendingRequests, desc: `${tenantPendingRequests} active queue records`, tab: 'bookings' },
+        { label: 'Committed Cost', value: formatTzs(tenantMonthlyCommitment), desc: 'Accepted reservation cost', tab: 'bookings' }
       ];
     }
   };
@@ -1114,6 +1115,39 @@ const Dashboard = () => {
   const bookingsCounts = getBookingsByDayOfWeek();
   const todayIndex = new Date().getDay();
 
+  const filteredProperties = data.properties.filter(p => 
+    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.location?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredBookings = data.bookings.filter(b => 
+    b.tenantEmail?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    b.propertyTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.status?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredMarketplace = data.marketplace.filter(p => 
+    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.location?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredRequests = data.landlordRequests.filter(r => 
+    r.applicantEmail?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    r.applicantName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredUsers = data.users.filter(u => 
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.role?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredLogs = data.logs.filter(l => 
+    l.action?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    l.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    l.details?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#08091a] flex flex-col md:flex-row text-slate-900 dark:text-slate-50 transition-colors duration-300 font-sans">
       
@@ -1140,7 +1174,10 @@ const Dashboard = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSearchQuery('');
+                  }}
                   className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all duration-200 relative group ${
                     isSelected 
                       ? 'text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-950/20' 
@@ -1254,6 +1291,7 @@ const Dashboard = () => {
                         key={tab.id}
                         onClick={() => {
                           setActiveTab(tab.id);
+                          setSearchQuery('');
                           setMobileOpen(false);
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all ${
@@ -1297,6 +1335,8 @@ const Dashboard = () => {
               type="text" 
               placeholder="Search listings, reservations, or settings" 
               className="w-full pl-12 pr-12 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/25 transition-all text-slate-700 dark:text-white"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 font-mono">
               ⌘F
@@ -1360,7 +1400,14 @@ const Dashboard = () => {
                       <span className={`text-[10px] font-bold uppercase tracking-widest ${stat.highlight ? 'text-primary-200' : 'text-slate-400 dark:text-slate-500'}`}>
                         {stat.label}
                       </span>
-                      <button className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
+                      <button 
+                        onClick={() => {
+                          if(stat.tab) {
+                            setActiveTab(stat.tab);
+                            setSearchQuery('');
+                          }
+                        }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
                         stat.highlight 
                           ? 'bg-white/10 hover:bg-white/20 text-white border-none' 
                           : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700'
@@ -1653,9 +1700,9 @@ const Dashboard = () => {
               </div>
 
               <div className="p-8">
-                {data.marketplace.filter(p => p.approved).length > 0 ? (
+                {filteredMarketplace.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {data.marketplace.filter(p => p.approved).map(prop => (
+                    {filteredMarketplace.map(prop => (
                       <div
                         key={prop.id}
                         className="group relative rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 hover:border-primary-500/40 p-5 transition-all duration-300 flex flex-col justify-between"
@@ -1761,11 +1808,11 @@ const Dashboard = () => {
                     </p>
                   </div>
                 )}
-                {data.properties.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {(user.role === 'admin' || user.role === 'agent'
-                      ? sortNewestFirst(data.properties)
-                      : data.properties
+                {filteredProperties.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {(user.role === 'agent' 
+                      ? sortNewestFirst(filteredProperties)
+                      : filteredProperties
                     ).map(prop => {
                       const reviewState = getPropertyReviewState(prop);
                       return (
@@ -1909,7 +1956,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
-                    {data.users?.map(u => {
+                    {filteredUsers?.map(u => {
                       const creatorEmail = u.createdBy ? (data.users.find(creator => creator.id === u.createdBy)?.email || `User #${u.createdBy}`) : 'System Seed';
                       const isCreatorSelf = u.createdBy === user.id;
                       const isTargetAdmin = u.role === 'admin';
@@ -1988,7 +2035,7 @@ const Dashboard = () => {
               </div>
 
               <div className="p-8 overflow-x-auto">
-                {data.logs?.length > 0 ? (
+                {filteredLogs?.length > 0 ? (
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -2000,7 +2047,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
-                      {data.logs.map(log => (
+                      {filteredLogs.map(log => (
                         <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
                           <td className="py-4">
                             <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-bold uppercase tracking-wider">
@@ -2052,8 +2099,8 @@ const Dashboard = () => {
               </div>
 
               <div className="p-5 sm:p-8 space-y-8">
-                {data.landlordRequests.length > 0 ? (
-                  data.landlordRequests.map(request => {
+                {filteredRequests.length > 0 ? (
+                  filteredRequests.map(request => {
                     const prompt = getActionPrompt(request.status);
                     return (
                       <div key={request.id} className="rounded-[2rem] bg-white dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -2248,9 +2295,9 @@ const Dashboard = () => {
               </div>
 
               <div className="p-8 space-y-6">
-                {data.bookings.length > 0 ? (
+                {filteredBookings.length > 0 ? (
                   <div className="space-y-6">
-                    {data.bookings.map(book => (
+                    {filteredBookings.map(book => (
                       <div 
                         key={book.id} 
                         className="p-6 md:p-8 rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-800"
