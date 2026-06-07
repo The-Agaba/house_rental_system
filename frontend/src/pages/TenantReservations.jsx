@@ -6,15 +6,23 @@ import {
   AlertCircle,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock,
+  Download,
+  Eye,
   FileText,
   Home,
   Loader2,
+  Mail,
   MapPin,
+  Phone,
   Timer,
+  User,
+  Wrench,
+  X,
   XCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { formatTzs } from '../utils/currency';
 
 const activeQueueStatuses = ['queued', 'awaiting_confirmation', 'confirmed'];
@@ -38,10 +46,277 @@ const getLeaseEndDate = (moveInDate, durationMonths) => {
 
 const formatStatus = (status) => (status || 'unknown').replaceAll('_', ' ');
 
+/* ─── Dropdown animation variants ─── */
+const dropdownVariants = {
+  hidden: { height: 0, opacity: 0, marginTop: 0 },
+  visible: {
+    height: 'auto',
+    opacity: 1,
+    marginTop: 24,
+    transition: {
+      height: { type: 'spring', stiffness: 300, damping: 30 },
+      opacity: { duration: 0.25, delay: 0.05 },
+      marginTop: { duration: 0.2 }
+    }
+  },
+  exit: {
+    height: 0,
+    opacity: 0,
+    marginTop: 0,
+    transition: {
+      height: { type: 'spring', stiffness: 300, damping: 30 },
+      opacity: { duration: 0.15 },
+      marginTop: { duration: 0.15 }
+    }
+  }
+};
+
+/* ─── Info card sub-component ─── */
+const InfoCard = ({ icon: Icon, title, children, accent = 'primary' }) => {
+  const colorMap = {
+    primary: 'border-primary-100 dark:border-primary-900/40 bg-primary-50/40 dark:bg-primary-950/20',
+    emerald: 'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20',
+    amber: 'border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20',
+    slate: 'border-slate-100 dark:border-slate-700/40 bg-slate-50/40 dark:bg-slate-800/30',
+  };
+  const iconColor = {
+    primary: 'text-primary-600 dark:text-primary-400',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    amber: 'text-amber-600 dark:text-amber-400',
+    slate: 'text-slate-500 dark:text-slate-400',
+  };
+  return (
+    <div className={`rounded-2xl border p-5 ${colorMap[accent]}`}>
+      <div className="flex items-center gap-2.5 mb-3">
+        <Icon size={18} className={iconColor[accent]} />
+        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">{title}</h3>
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+};
+
+const InfoRow = ({ label, value, bold = false }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</span>
+    <span className={`text-sm ${bold ? 'font-black' : 'font-semibold'} text-slate-900 dark:text-white`}>{value || 'N/A'}</span>
+  </div>
+);
+
+/* ─── Rental Details Dropdown ─── */
+const RentalDetailsDropdown = ({ item, isOpen }) => {
+  const leaseEnd = getLeaseEndDate(item.moveInDate, item.durationMonths);
+  const [downloading, setDownloading] = useState(false);
+  const [letterUrl, setLetterUrl] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      if (letterUrl) {
+        window.URL.revokeObjectURL(letterUrl);
+      }
+    };
+  }, [letterUrl]);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await axios.get(`/reservations/${item.id}/confirmation-letter`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Rental_Confirmation_${item.propertyTitle?.replace(/[^a-zA-Z0-9]/g, '_') || item.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Confirmation letter downloaded!');
+    } catch (err) {
+      toast.error('Failed to download confirmation letter');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleViewInSystem = async () => {
+    try {
+      const res = await axios.get(`/reservations/${item.id}/confirmation-letter`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      setLetterUrl((currentUrl) => {
+        if (currentUrl) {
+          window.URL.revokeObjectURL(currentUrl);
+        }
+        return url;
+      });
+    } catch (err) {
+      toast.error('Failed to load confirmation letter');
+    }
+  };
+
+  const closeLetterPreview = () => {
+    if (letterUrl) {
+      window.URL.revokeObjectURL(letterUrl);
+    }
+    setLetterUrl(null);
+  };
+
+  return (
+    <>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          variants={dropdownVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="overflow-hidden"
+        >
+          <div className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-gradient-to-br from-slate-50 via-white to-primary-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-primary-950/10 p-5 md:p-7">
+
+            {/* Grid of info cards */}
+            <div className="grid gap-4 md:grid-cols-2">
+
+              {/* 📍 Property Location */}
+              <InfoCard icon={MapPin} title="Property Location" accent="primary">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                  {item.propertyLocation || 'Location will be provided by the landlord'}
+                </p>
+              </InfoCard>
+
+              {/* 👤 Landlord Contact */}
+              <InfoCard icon={User} title="Landlord Contact" accent="emerald">
+                <InfoRow label="Full Name" value={item.landlordFullName} bold />
+                <div className="flex items-center gap-2 mt-1">
+                  <Mail size={13} className="text-slate-400" />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item.landlordEmail || 'N/A'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone size={13} className="text-slate-400" />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item.landlordPhone || 'N/A'}</span>
+                </div>
+              </InfoCard>
+
+              {/* 📅 Lease Period */}
+              <InfoCard icon={CalendarDays} title="Lease Period & Stay" accent="primary">
+                <InfoRow label="Move-in Date" value={item.moveInDate || 'Pending'} bold />
+                <InfoRow label="Move-out Date" value={leaseEnd || 'Pending'} bold />
+                <InfoRow label="Duration" value={`${item.durationMonths || 0} month(s)`} />
+                <InfoRow label="Total Cost" value={formatTzs(item.estimatedTotalCost)} bold />
+              </InfoCard>
+
+              {/* 📋 Reporting Instructions */}
+              <InfoCard icon={FileText} title="Move-in Instructions" accent="slate">
+                <ul className="space-y-2 text-[13px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
+                  <li className="flex gap-2">
+                    <span className="text-primary-500 mt-0.5">•</span>
+                    <span>Report at the property on <strong className="text-slate-800 dark:text-white">{item.moveInDate || 'your move-in date'}</strong> and meet the landlord or assigned agent for handover.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary-500 mt-0.5">•</span>
+                    <span>Carry your signed rental contract, payment proof, and a valid ID document.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary-500 mt-0.5">•</span>
+                    <span>Your stay lasts from <strong className="text-slate-800 dark:text-white">{item.moveInDate || '—'}</strong> to <strong className="text-slate-800 dark:text-white">{leaseEnd || '—'}</strong>.</span>
+                  </li>
+                </ul>
+              </InfoCard>
+            </div>
+
+            {/* 🔧 Extension & Maintenance notice */}
+            <div className="mt-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/15 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Wrench size={16} className="text-amber-600 dark:text-amber-400" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Extension & Maintenance</h3>
+              </div>
+              <p className="text-[13px] font-medium text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                To extend your lease or request maintenance, please <strong>contact your landlord directly</strong> using the contact details above. These features are not yet available in the system and will be added in a future update.
+              </p>
+            </div>
+
+            {/* 📄 Confirmation Letter Actions */}
+            <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex-1">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Rental Confirmation Letter</h3>
+                <p className="text-[12px] font-medium text-slate-400 dark:text-slate-500 leading-relaxed">
+                  Download or view your official confirmation letter — proof that you are an approved tenant for this property.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={handleViewInSystem}
+                  className="btn-secondary !py-2.5 !px-4 text-xs inline-flex items-center gap-1.5"
+                  id={`view-letter-${item.id}`}
+                >
+                  <Eye size={15} />
+                  View Letter
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="btn-primary !py-2.5 !px-4 text-xs inline-flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-wait"
+                  id={`download-letter-${item.id}`}
+                >
+                  {downloading ? <Loader2 className="animate-spin" size={15} /> : <Download size={15} />}
+                  {downloading ? 'Downloading...' : 'Download PDF'}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {letterUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center px-4 py-8"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            className="w-full max-w-5xl h-[82vh] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl flex flex-col"
+          >
+            <div className="flex items-center justify-between gap-4 p-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-sm font-black text-slate-950 dark:text-white">Rental Confirmation Letter</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.propertyTitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeLetterPreview}
+                className="w-10 h-10 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                aria-label="Close confirmation letter preview"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <iframe
+              src={letterUrl}
+              title="Rental confirmation letter preview"
+              className="flex-1 w-full bg-slate-100 dark:bg-slate-900"
+            />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
+  );
+};
+
+/* ─── Main Component ─── */
 const TenantReservations = ({ mode = 'queue' }) => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const isRentals = mode === 'rentals';
 
@@ -78,6 +353,10 @@ const TenantReservations = ({ mode = 'queue' }) => {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedId(prev => (prev === id ? null : id));
   };
 
   if (loading) {
@@ -156,6 +435,7 @@ const TenantReservations = ({ mode = 'queue' }) => {
             {visibleReservations.map((item, index) => {
               const leaseEnd = getLeaseEndDate(item.moveInDate, item.durationMonths);
               const isActiveQueue = activeQueueStatuses.includes(item.status);
+              const isExpanded = expandedId === item.id;
               return (
                 <motion.article
                   key={item.id}
@@ -185,9 +465,31 @@ const TenantReservations = ({ mode = 'queue' }) => {
                       </p>
                     </div>
 
-                    <Link to={`/properties/${item.propertyId}`} className="btn-secondary !py-2.5 !px-5 text-xs self-start">
-                      View House Details
-                    </Link>
+                    {/* Toggle button for accepted rentals, link for others */}
+                    {isRentals ? (
+                      <button
+                        onClick={() => toggleExpand(item.id)}
+                        className={`btn-secondary !py-2.5 !px-5 text-xs self-start inline-flex items-center gap-2 transition-colors duration-200 ${
+                          isExpanded
+                            ? '!bg-primary-600 !text-white !border-primary-600 dark:!bg-primary-500 dark:!border-primary-500'
+                            : ''
+                        }`}
+                        id={`toggle-details-${item.id}`}
+                      >
+                        {isExpanded ? 'Hide Details' : 'Rental Details'}
+                        <motion.span
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                          className="inline-flex"
+                        >
+                          <ChevronDown size={15} />
+                        </motion.span>
+                      </button>
+                    ) : (
+                      <Link to={`/properties/${item.propertyId}`} className="btn-secondary !py-2.5 !px-5 text-xs self-start">
+                        View House Details
+                      </Link>
+                    )}
                   </div>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -210,6 +512,11 @@ const TenantReservations = ({ mode = 'queue' }) => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Animated Rental Details Dropdown (only for accepted rentals) */}
+                  {isRentals && (
+                    <RentalDetailsDropdown item={item} isOpen={isExpanded} />
+                  )}
 
                   {isRentals ? (
                     <div className="mt-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-4 text-sm font-semibold text-emerald-800 dark:text-emerald-300 leading-relaxed">

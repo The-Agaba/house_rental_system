@@ -14,12 +14,26 @@ import com.collincorp.houserental.entity.UserEntity;
 import com.collincorp.houserental.repository.PropertyRepository;
 import com.collincorp.houserental.repository.ReservationRepository;
 import com.collincorp.houserental.repository.UserRepository;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -407,12 +421,108 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public byte[] generateConfirmationLetter(Long reservationId, Long userId) {
+        ReservationEntity reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "reservation_not_found"));
+
+        boolean isTenant = reservation.getTenant().getId().equals(userId);
+        boolean isLandlord = reservation.getProperty().getLandlord().getId().equals(userId);
+        if (!isTenant && !isLandlord) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "unauthorized");
+        }
+
+        if (reservation.getStatus() != ReservationStatus.accepted) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "confirmation_letter_available_after_acceptance");
+        }
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             PdfWriter writer = new PdfWriter(out);
+             PdfDocument pdf = new PdfDocument(writer);
+             Document document = new Document(pdf)) {
+
+            PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            document.setFont(regular);
+
+            PropertyEntity property = reservation.getProperty();
+            UserEntity tenant = reservation.getTenant();
+            UserEntity landlord = property.getLandlord();
+            LocalDate moveOutDate = reservation.getMoveInDate().plusMonths(reservation.getDurationMonths());
+
+            document.add(new Paragraph("RentHub Rental Confirmation Letter")
+                    .setFont(bold)
+                    .setFontSize(18)
+                    .setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("Official approved tenant confirmation")
+                    .setFontSize(10)
+                    .setTextAlignment(TextAlignment.CENTER));
+
+            document.add(new Paragraph("This letter confirms that the tenant named below has been approved by the landlord and RentHub system for the listed rental house.")
+                    .setMarginTop(20));
+
+            Table table = new Table(UnitValue.createPercentArray(new float[]{34, 66}))
+                    .useAllAvailableWidth()
+                    .setMarginTop(12);
+            addRow(table, bold, "Confirmation ID", "RH-" + reservation.getId());
+            addRow(table, bold, "House", property.getTitle());
+            addRow(table, bold, "Exact Location", property.getLocation());
+            addRow(table, bold, "Tenant", tenant.getFullName());
+            addRow(table, bold, "Tenant Email", tenant.getEmail());
+            addRow(table, bold, "Landlord", landlord.getFullName());
+            addRow(table, bold, "Landlord Email", contactOrFallback(property.getContactEmail(), landlord.getEmail()));
+            addRow(table, bold, "Landlord Phone", contactOrFallback(property.getPhone(), landlord.getPhone()));
+            addRow(table, bold, "Move-in Date", reservation.getMoveInDate().toString());
+            addRow(table, bold, "Move-out Date", moveOutDate.toString());
+            addRow(table, bold, "Duration", reservation.getDurationMonths() + " month(s)");
+            addRow(table, bold, "Total Estimated Cost", formatCurrency(reservation.getEstimatedTotalCost()));
+            addRow(table, bold, "Approval Status", "Approved by tenant, landlord, and RentHub system");
+            document.add(table);
+
+            document.add(new Paragraph("Instructions")
+                    .setFont(bold)
+                    .setFontSize(13)
+                    .setMarginTop(18));
+            document.add(new Paragraph("- Report at the property on the move-in date and meet the landlord or assigned agent for handover."));
+            document.add(new Paragraph("- Carry a valid identification document, payment proof, and any rental contract documents shared by the landlord."));
+            document.add(new Paragraph("- For lease extension or maintenance requests, contact the landlord directly using the details above because those workflows are not yet implemented in the system."));
+
+            document.add(new Paragraph("Generated on " + LocalDate.now())
+                    .setFontSize(9)
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setMarginTop(24));
+            document.close();
+            return out.toByteArray();
+        } catch (Exception ex) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "confirmation_letter_generation_failed");
+        }
+    }
+
+    private void addRow(Table table, PdfFont bold, String label, String value) {
+        table.addCell(new Cell().add(new Paragraph(label).setFont(bold)));
+        table.addCell(new Cell().add(new Paragraph(value == null || value.isBlank() ? "N/A" : value)));
+    }
+
+    private String contactOrFallback(String preferred, String fallback) {
+        return preferred != null && !preferred.isBlank() ? preferred : fallback;
+    }
+
+    private String formatCurrency(BigDecimal amount) {
+        NumberFormat format = NumberFormat.getCurrencyInstance(Locale.US);
+        return format.format(amount == null ? BigDecimal.ZERO : amount).replace("$", "TZS ");
+    }
+
     public ReservationResponse toResponse(ReservationEntity entity) {
+        PropertyEntity property = entity.getProperty();
+        UserEntity landlord = property.getLandlord();
         return new ReservationResponse(
                 entity.getId(),
-                entity.getProperty().getId(),
-                entity.getProperty().getTitle(),
-                entity.getProperty().getLocation(),
+                property.getId(),
+                property.getTitle(),
+                property.getLocation(),
+                landlord.getFullName(),
+                contactOrFallback(property.getContactEmail(), landlord.getEmail()),
+                contactOrFallback(property.getPhone(), landlord.getPhone()),
                 entity.getTenant().getId(),
                 entity.getTenant().getEmail(),
                 entity.getTenant().getFullName(),
