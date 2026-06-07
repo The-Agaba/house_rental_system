@@ -99,8 +99,13 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-
-
+        <!-- PDF generation for confirmation letters -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext-core</artifactId>
+            <version>8.0.5</version>
+            <type>pom</type>
+        </dependency>
 
     </dependencies>
 
