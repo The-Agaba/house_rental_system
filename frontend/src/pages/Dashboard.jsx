@@ -1132,9 +1132,9 @@ const Dashboard = () => {
   );
   
   const filteredRequests = data.landlordRequests.filter(r => 
-    r.applicantEmail?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    r.applicantName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  r.requesterEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  r.requesterFullName?.toLowerCase().includes(searchQuery.toLowerCase())
+);
 
   const filteredUsers = data.users.filter(u => 
     u.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 

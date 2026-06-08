@@ -103,14 +103,12 @@ public class LandlordOnboardingService {
 
         landlordRequestRepository.save(entity);
 
-        //send email to show the locality to go
-        emailVerificationService.sendLandlordVerificationEmail("Hello Dear User Please Visit Your Agent At Your Locality "+dto.locality()+""+"Central office"+"\n"+
-                 "Please go with Your full Identification Documents \n"+
-                 "1. Your NIDA card \n"+
-                 "2. Your TIN number \n"+
-                 " Our office are open Monday to Sunday from 08:00 up to 18:00"
-
-                 );
+        emailVerificationService.sendEmailNotification(email, "Visit Your Agent",
+                "Please Visit Your Agent At Your Locality " + dto.locality() + " Central office\n" +
+                "Please go with Your full Identification Documents\n" +
+                "1. Your NIDA card\n" +
+                "2. Your TIN number\n" +
+                "Our office is open Monday to Sunday from 08:00 up to 18:00");
 
         List<PropertyRegistrationDto> submittedProperties = dto.properties() == null ? List.of() : dto.properties();
         if (submittedProperties.isEmpty()) {
@@ -254,7 +252,6 @@ public class LandlordOnboardingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "nida_property_required");
         }
 
-        // Store file and get path
         String filePath = storageService.store(file);
 
         LandlordDocumentEntity doc = new LandlordDocumentEntity();
@@ -266,7 +263,6 @@ public class LandlordOnboardingService {
         doc.setUploadedAt(Instant.now());
         landlordDocumentRepository.save(doc);
 
-        // Update request status to verified once documents start being uploaded
         request.setStatus(LandlordRequestStatus.verified);
         landlordRequestRepository.save(request);
 
@@ -323,13 +319,12 @@ public class LandlordOnboardingService {
             userRepository.save(landlord);
         }
 
-        // 2. Register the properties the landlord claimed, but keep them hidden until listing details are complete.
         for (LandlordRequestPropertyEntity pDto : claimedProperties) {
             PropertyEntity prop = new PropertyEntity();
             prop.setLandlord(landlord);
             prop.setTitle(pDto.getTitle());
             prop.setLocation(pDto.getLocation());
-            prop.setPricePerMonth(BigDecimal.ZERO); // skeletal properties have price = 0
+            prop.setPricePerMonth(BigDecimal.ZERO);
             prop.setRooms(0);
             prop.setNeedsImages(true);
             prop.setRegisteredByAgent(agent);
@@ -362,6 +357,8 @@ public class LandlordOnboardingService {
             );
         } else {
             String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
+
+            emailVerificationService.sendLandlordApprovalEmail(landlord.getEmail(), verificationCode, tempPassword);
 
             notificationService.sendNotification(
                     landlord.getId(),
@@ -399,6 +396,7 @@ public class LandlordOnboardingService {
         }
 
         String verificationCode = emailVerificationService.generateLandlordVerificationCode(landlord.getEmail());
+        emailVerificationService.sendLandlordApprovalEmail(landlord.getEmail(), verificationCode, null);
         notificationService.sendNotification(
                 landlord.getId(),
                 NotificationType.LANDLORD_REQUEST_UPDATE,
@@ -434,7 +432,6 @@ public class LandlordOnboardingService {
 
         logService.log(LogAction.LANDLORD_REQUEST_CREATED, "landlord_request", request.getId(), agentId, request.getRequesterEmail(), "Request rejected. Reason: " + reason);
 
-        // Simple notification/email could be sent to request.getRequesterEmail(), but since they are not a user in DB, we can write an audit log or try sending a direct email if desired
         return toResponse(request);
     }
 

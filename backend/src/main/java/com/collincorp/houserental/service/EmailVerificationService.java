@@ -38,6 +38,21 @@ public class EmailVerificationService {
         return code;
     }
 
+    public void sendEmailNotification(String email, String subject, String body) {
+        String cleanEmail = email.trim().toLowerCase();
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(cleanEmail);
+        message.setSubject("RentHub: " + subject);
+        message.setText(body);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email to " + cleanEmail + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
+        }
+    }
+
     public void sendLandlordVerificationEmail(String email) {
         String cleanEmail = email.trim().toLowerCase();
         String code = generateLandlordVerificationCode(cleanEmail);
@@ -59,7 +74,8 @@ public class EmailVerificationService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            System.err.println("Failed to send email to " + cleanEmail + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
         }
     }
 
@@ -87,13 +103,14 @@ public class EmailVerificationService {
         message.setFrom(senderEmail);
         message.setTo(email);
         message.setSubject("Complete Your Registration - Verification Code");
-        message.setText("Your 6-digit registration verification code is: " + code+"\n"+
+message.setText("Your 6-digit registration verification code is: " + code+"\n"+
          "Please Do not share with anyone , this is for security purpose "+"\n"+"\n"+" "+
                 "!!! Warning Use it Before exipiration time and if it expired request new verification code.");
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            System.err.println("Failed to send email to " + email + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
         }
     }
 
@@ -136,7 +153,8 @@ public class EmailVerificationService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            System.err.println("Failed to send email to " + cleanEmail + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
         }
         
         return newCode;
@@ -174,7 +192,8 @@ public class EmailVerificationService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            System.err.println("Failed to send email to " + cleanEmail + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
         }
         
         return newCode;
@@ -214,7 +233,8 @@ public class EmailVerificationService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            System.err.println("Failed to send email to " + cleanEmail + ": " + e.getMessage());
+            throw new RuntimeException("Email send failed", e);
         }
     }
 }
