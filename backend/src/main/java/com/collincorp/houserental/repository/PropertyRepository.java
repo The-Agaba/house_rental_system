@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PropertyRepository extends JpaRepository<PropertyEntity, Long>, JpaSpecificationExecutor<PropertyEntity> {
     List<PropertyEntity> findAllByLandlordIdOrderByIdDesc(Long landlordId);
+    List<PropertyEntity> findAllByLandlordLocalityIgnoreCaseOrderByIdDesc(String locality);
 }

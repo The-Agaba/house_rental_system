@@ -8,6 +8,7 @@ import com.collincorp.houserental.dto.PropertyImageResponse;
 import com.collincorp.houserental.dto.PropertyResponse;
 import com.collincorp.houserental.dto.PropertyUpdateRequest;
 import com.collincorp.houserental.service.PropertyService;
+import com.collincorp.houserental.support.SecurityUtils;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,11 @@ public class PropertyController {
         return propertyService.listMine();
     }
 
+    @GetMapping("/my-locality")
+    public List<PropertyResponse> listByLocality() {
+        return propertyService.listByAgentLocality(SecurityUtils.currentUser().getLocality());
+    }
+
     @GetMapping
     public PagedResponse<PropertyResponse> list(
             @RequestParam(required = false) String location,
@@ -50,7 +56,7 @@ public class PropertyController {
             @RequestParam(required = false) PropertyAvailability availability,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<PropertyResponse> result = propertyService.search(location, maxPrice, minRooms, availability, pageable);
         return new PagedResponse<>(
                 result.getContent(),

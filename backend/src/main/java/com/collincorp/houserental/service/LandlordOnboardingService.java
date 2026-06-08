@@ -284,8 +284,8 @@ public class LandlordOnboardingService {
             throw new ApiException(HttpStatus.CONFLICT, "email_taken");
         }
 
-        List<LandlordDocumentEntity> documents = landlordDocumentRepository.findByLandlordRequestId(request.getId());
-        List<LandlordRequestPropertyEntity> claimedProperties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdAsc(request.getId());
+        List<LandlordDocumentEntity> documents = landlordDocumentRepository.findByLandlordRequestIdOrderByIdDesc(request.getId());
+        List<LandlordRequestPropertyEntity> claimedProperties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdDesc(request.getId());
         boolean requiresTinDocument = request.getRequestType() == LandlordRequestType.initial_landlord;
         boolean hasTinDocument = documents.stream()
                 .anyMatch(doc -> "TIN".equalsIgnoreCase(doc.getDocumentType()));
@@ -492,7 +492,7 @@ public class LandlordOnboardingService {
     }
 
     public LandlordRequestResponse toResponse(LandlordRequestEntity entity) {
-        List<LandlordRequestPropertyResponse> properties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdAsc(entity.getId())
+        List<LandlordRequestPropertyResponse> properties = landlordRequestPropertyRepository.findByLandlordRequestIdOrderByIdDesc(entity.getId())
                 .stream()
                 .map(p -> new LandlordRequestPropertyResponse(
                         p.getId(),
@@ -503,7 +503,7 @@ public class LandlordOnboardingService {
                 ))
                 .collect(Collectors.toList());
 
-        List<LandlordDocumentResponse> docs = landlordDocumentRepository.findByLandlordRequestId(entity.getId())
+        List<LandlordDocumentResponse> docs = landlordDocumentRepository.findByLandlordRequestIdOrderByIdDesc(entity.getId())
                 .stream()
                 .map(d -> new LandlordDocumentResponse(
                         d.getId(),

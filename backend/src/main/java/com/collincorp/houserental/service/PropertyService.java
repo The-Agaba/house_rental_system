@@ -56,6 +56,13 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
+    public List<PropertyResponse> listByAgentLocality(String locality) {
+        return propertyRepository.findAllByLandlordLocalityIgnoreCaseOrderByIdDesc(locality).stream()
+                .map(p -> toResponse(p, true))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public Page<PropertyResponse> search(
             String location,
             BigDecimal maxPrice,
@@ -65,9 +72,10 @@ public class PropertyService {
 
         UserEntity user = currentUserOrNull();
         boolean isAdmin = user != null && user.getRole() == UserRole.admin;
+        boolean isAgent = user != null && user.getRole() == UserRole.agent;
         boolean canManageListings = user != null && (user.getRole() == UserRole.admin || user.getRole() == UserRole.agent);
 
-        Specification<PropertyEntity> spec = buildSpec(location, maxPrice, minRooms, availability, isAdmin);
+        Specification<PropertyEntity> spec = buildSpec(location, maxPrice, minRooms, availability, isAdmin, user != null ? user.getLocality() : null);
         return propertyRepository.findAll(spec, pageable)
                 .map(p -> toResponse(p, canManageListings || isOwner(p, user)));
     }
@@ -296,7 +304,7 @@ public class PropertyService {
     }
 
     private static Specification<PropertyEntity> buildSpec(
-            String location, BigDecimal maxPrice, Integer minRooms, PropertyAvailability availability, boolean isAdmin) {
+            String location, BigDecimal maxPrice, Integer minRooms, PropertyAvailability availability, boolean isAdmin, String agentLocality) {
         return (root, query, cb) -> {
             List<Predicate> parts = new ArrayList<>();
             if (StringUtils.hasText(location)) {
@@ -311,8 +319,11 @@ public class PropertyService {
             if (availability != null) {
                 parts.add(cb.equal(root.get("availability"), availability));
             }
-            if (!isAdmin) {
+            if (!isAdmin && agentLocality == null) {
                 parts.add(cb.equal(root.get("approved"), true));
+            }
+            if (agentLocality != null && !agentLocality.isEmpty()) {
+                parts.add(cb.equal(root.get("landlord").get("locality"), agentLocality));
             }
             if (parts.isEmpty()) {
                 return cb.conjunction();

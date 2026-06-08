@@ -516,10 +516,10 @@ const Dashboard = () => {
           marketplace: marketRes.data.content || marketRes.data || [],
           landlordRequests: []
         });
-      } else if (user.role === 'agent') {
+} else if (user.role === 'agent') {
         const [requestRes, propRes, marketRes] = await Promise.all([
           axios.get('/landlord-requests/my'),
-          axios.get('/properties/my'),
+          axios.get('/properties/my-locality'),
           axios.get('/properties?size=1000')
         ]);
         setData({
@@ -582,10 +582,10 @@ const Dashboard = () => {
           marketplace: marketRes.data.content || marketRes.data || [],
           landlordRequests: []
         });
-      } else if (user.role === 'agent') {
+} else if (user.role === 'agent') {
         const [requestRes, propRes, marketRes] = await Promise.all([
           axios.get('/landlord-requests/my'),
-          axios.get('/properties/my'),
+          axios.get('/properties/my-locality'),
           axios.get('/properties?size=1000')
         ]);
         setData({
