@@ -46,8 +46,16 @@ public class ReservationController {
 
     @PutMapping("/{id}/confirm")
     public ResponseEntity<ReservationResponse> confirmReservation(@PathVariable Long id) {
-        UserEntity tenant = SecurityUtils.currentUser();
-        return ResponseEntity.ok(reservationService.confirmReservation(id, tenant.getId()));
+        UserEntity landlord = SecurityUtils.currentUser();
+        return ResponseEntity.ok(reservationService.landlordConfirmAppointment(id, landlord.getId(), null));
+    }
+
+    @PutMapping("/{id}/confirm-appointment")
+    public ResponseEntity<ReservationResponse> confirmAppointment(
+            @PathVariable Long id,
+            @RequestParam(required = false) String notes) {
+        UserEntity landlord = SecurityUtils.currentUser();
+        return ResponseEntity.ok(reservationService.landlordConfirmAppointment(id, landlord.getId(), notes));
     }
 
     @PutMapping("/{id}/accept")

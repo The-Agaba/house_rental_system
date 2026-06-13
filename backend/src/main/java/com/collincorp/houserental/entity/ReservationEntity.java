@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reservations")
@@ -40,6 +41,15 @@ public class ReservationEntity {
 
     @Column(name = "confirmation_deadline")
     private Instant confirmationDeadline;
+
+    @Column(name = "appointment_at", nullable = false)
+    private LocalDateTime appointmentAt;
+
+    @Column(name = "appointment_confirmed_at")
+    private Instant appointmentConfirmedAt;
+
+    @Column(name = "landlord_response_notes", columnDefinition = "TEXT")
+    private String landlordResponseNotes;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
@@ -121,6 +131,30 @@ public class ReservationEntity {
 
     public void setConfirmationDeadline(Instant confirmationDeadline) {
         this.confirmationDeadline = confirmationDeadline;
+    }
+
+    public LocalDateTime getAppointmentAt() {
+        return appointmentAt;
+    }
+
+    public void setAppointmentAt(LocalDateTime appointmentAt) {
+        this.appointmentAt = appointmentAt;
+    }
+
+    public Instant getAppointmentConfirmedAt() {
+        return appointmentConfirmedAt;
+    }
+
+    public void setAppointmentConfirmedAt(Instant appointmentConfirmedAt) {
+        this.appointmentConfirmedAt = appointmentConfirmedAt;
+    }
+
+    public String getLandlordResponseNotes() {
+        return landlordResponseNotes;
+    }
+
+    public void setLandlordResponseNotes(String landlordResponseNotes) {
+        this.landlordResponseNotes = landlordResponseNotes;
     }
 
     public Instant getCreatedAt() {

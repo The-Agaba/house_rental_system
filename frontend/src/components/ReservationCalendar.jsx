@@ -49,7 +49,7 @@ const ReservationCalendar = ({ propertyId, selectedDate, onDateSelected }) => {
       <div className="p-3.5 rounded-xl bg-primary-50/50 dark:bg-primary-950/10 border border-primary-100/50 dark:border-primary-900/20 flex gap-2">
         <Info size={16} className="text-primary-600 dark:text-primary-400 shrink-0 mt-0.5" />
         <p className="text-[11px] text-primary-850 dark:text-primary-300 font-semibold leading-normal">
-          Earliest available move-in date based on the queue and lease schedule is: <span className="font-extrabold text-primary-600 dark:text-primary-400">{formattedEarliest}</span>.
+          Earliest available move-in date based on the current lease schedule is: <span className="font-extrabold text-primary-600 dark:text-primary-400">{formattedEarliest}</span>.
         </p>
       </div>
 

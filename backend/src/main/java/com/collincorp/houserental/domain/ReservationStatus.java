@@ -1,10 +1,14 @@
 package com.collincorp.houserental.domain;
 
 public enum ReservationStatus {
-    queued,             // In the FCFS queue, waiting for turn
-    awaiting_confirmation, // User's turn — has 24hrs to confirm
-    confirmed,          // User confirmed within deadline
-    expired,            // 24hr window passed without confirmation
-    cancelled,          // Cancelled by user or system
-    accepted            // Landlord accepted this reservation (final)
+    pending_landlord_confirmation,
+    confirmed,
+    expired,
+    cancelled,
+    declined,
+    accepted,
+
+    // Legacy statuses kept so existing database rows can still be read.
+    queued,
+    awaiting_confirmation
 }

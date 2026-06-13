@@ -44,6 +44,7 @@ const PropertyDetail = () => {
   const [allReviewsModalOpen, setAllReviewsModalOpen] = useState(false);
 
   const [moveInDate, setMoveInDate] = useState('');
+  const [appointmentAt, setAppointmentAt] = useState('');
   const [durationMonths, setDurationMonths] = useState(3);
   const [queueRefreshKey, setQueueRefreshKey] = useState(0);
 
@@ -105,21 +106,28 @@ const PropertyDetail = () => {
 
   const handleJoinQueue = async (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please log in to join the reservation queue'); navigate('/login'); return; }
+    if (!user) { toast.error('Please log in to reserve this property'); navigate('/login'); return; }
     if (user.role !== 'tenant') { toast.error('Only tenant accounts can reserve properties'); return; }
     if (!moveInDate) { toast.error('Please choose a move-in date'); return; }
+    if (!appointmentAt) { toast.error('Please choose a viewing appointment date and time'); return; }
+    if (new Date(appointmentAt) >= new Date(`${moveInDate}T00:00:00`)) {
+      toast.error('Viewing appointment must be before the move-in date');
+      return;
+    }
     setSending(true);
     try {
       await axios.post('/reservations', { 
         propertyId: property.id, 
         moveInDate,
+        appointmentAt,
         durationMonths
       });
-      toast.success('You joined the reservation queue');
+      toast.success('Property reserved for 24 hours while the landlord confirms your appointment');
       setMoveInDate('');
+      setAppointmentAt('');
       setQueueRefreshKey(prev => prev + 1);
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to join queue');
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to reserve property');
     } finally {
       setSending(false);
     }
@@ -283,7 +291,7 @@ const PropertyDetail = () => {
               {[
                 { label: 'Bedrooms',   value: property.rooms,   icon: Bed         },
                 { label: 'Monthly',    value: formatTzs(property.pricePerMonth), icon: Banknote },
-                { label: 'Queue',      value: property.bookingCount || 0, icon: ListOrdered },
+                { label: 'Status',      value: property.availability === 'available' ? 'Open' : 'Rented', icon: ListOrdered },
                 { label: 'Rating',     value: ratingLabel,        icon: Star        },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="card p-4 text-center">
@@ -409,6 +417,21 @@ const PropertyDetail = () => {
                       selectedDate={moveInDate}
                       onDateSelected={setMoveInDate}
                     />
+                    <div className="space-y-3">
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 ml-1">
+                        Viewing Appointment
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        className="input-field font-medium"
+                        value={appointmentAt}
+                        onChange={(e) => setAppointmentAt(e.target.value)}
+                      />
+                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        Choose the exact day and time you want to view the property. It must be before your move-in date.
+                      </p>
+                    </div>
                     <CostEstimator
                       pricePerMonth={Number(property.pricePerMonth || 0)}
                       durationMonths={durationMonths}
@@ -418,13 +441,13 @@ const PropertyDetail = () => {
                     <button type="submit" disabled={sending} className="btn-primary w-full !py-4 text-base group">
                       {sending
                         ? <Loader2 className="animate-spin" size={20} />
-                        : <><ListOrdered size={18} /> Book Now</>
+                        : <><ListOrdered size={18} /> Reserve Now</>
                       }
                     </button>
                   </form>
 
                   <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <ShieldCheck size={13} className="text-green-500" /> FCFS queue with 24-hour confirmation
+                    <ShieldCheck size={13} className="text-green-500" /> Exclusive 24-hour reservation hold
                   </div>
                 </>
               )}

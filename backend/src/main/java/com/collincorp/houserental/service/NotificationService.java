@@ -8,12 +8,14 @@ import com.collincorp.houserental.entity.NotificationEntity;
 import com.collincorp.houserental.entity.UserEntity;
 import com.collincorp.houserental.repository.NotificationRepository;
 import com.collincorp.houserental.repository.UserRepository;
+import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +43,11 @@ public class NotificationService {
 
     @Transactional
     public NotificationResponse sendNotification(Long recipientId, NotificationType type, String title, String message, Long referenceId) {
+        return sendNotification(recipientId, type, title, message, null, referenceId);
+    }
+
+    @Transactional
+    public NotificationResponse sendNotification(Long recipientId, NotificationType type, String title, String message, String htmlMessage, Long referenceId) {
         UserEntity recipient = userRepository.findById(recipientId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user_not_found"));
 
@@ -54,12 +61,22 @@ public class NotificationService {
 
         boolean emailSent = false;
         try {
-            SimpleMailMessage mailMessage = new SimpleMailMessage();
-            mailMessage.setFrom(senderEmail);
-            mailMessage.setTo(recipient.getEmail());
-            mailMessage.setSubject("RentHub: " + title);
-            mailMessage.setText(message);
-            mailSender.send(mailMessage);
+            if (htmlMessage != null && !htmlMessage.isBlank()) {
+                MimeMessage mimeMessage = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+                helper.setFrom(senderEmail);
+                helper.setTo(recipient.getEmail());
+                helper.setSubject("RentHub: " + title);
+                helper.setText(message, htmlMessage);
+                mailSender.send(mimeMessage);
+            } else {
+                SimpleMailMessage mailMessage = new SimpleMailMessage();
+                mailMessage.setFrom(senderEmail);
+                mailMessage.setTo(recipient.getEmail());
+                mailMessage.setSubject("RentHub: " + title);
+                mailMessage.setText(message);
+                mailSender.send(mailMessage);
+            }
             emailSent = true;
         } catch (Exception e) {
             // Log failure but don't fail transaction

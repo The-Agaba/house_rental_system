@@ -2289,12 +2289,22 @@ const Dashboard = () => {
                     <h2 className="text-xl font-bold text-slate-950 dark:text-white">
                       {user.role === 'landlord' ? 'Tenant Reservations' : 'My Reservations'}
                     </h2>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Track queue positions, confirmations, and landlord acceptance.</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Track viewing appointments, 24-hour holds, landlord confirmation, and final acceptance.</p>
                   </div>
                 </div>
               </div>
 
               <div className="p-8 space-y-6">
+                {user.role === 'landlord' && (
+                  <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 space-y-2 leading-relaxed shadow-sm">
+                    <p className="font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                      ⚠️ Landlord Hosting Guidelines & Availability Policy
+                    </p>
+                    <p className="font-medium text-amber-800/90 dark:text-amber-300/80">
+                      When making your property available online, make sure you or your representative are always available at the property to attend requested viewing appointments. If you cannot attend, deny the reservation hold so it releases. Landlords must confirm the requested appointment date and time in the system directly for the reservation to complete.
+                    </p>
+                  </div>
+                )}
                 {filteredBookings.length > 0 ? (
                   <div className="space-y-6">
                     {filteredBookings.map(book => (
@@ -2341,7 +2351,7 @@ const Dashboard = () => {
                               <strong className="text-slate-400">Duration:</strong> {book.durationMonths} months
                             </div>
                             <div>
-                              <strong className="text-slate-400">Queue:</strong> #{book.queuePosition || '-'}
+                              <strong className="text-slate-400">Appointment:</strong> {book.appointmentAt ? new Date(book.appointmentAt).toLocaleString() : 'Pending'}
                             </div>
                             <div>
                               <strong className="text-slate-400">Cost:</strong> {formatTzs(book.estimatedTotalCost)}
@@ -2370,7 +2380,7 @@ const Dashboard = () => {
                           </div>
                         )}
 
-                        {user.role === 'landlord' && ['queued', 'awaiting_confirmation', 'confirmed'].includes(book.status) && (
+                        {user.role === 'landlord' && ['pending_landlord_confirmation', 'queued', 'awaiting_confirmation', 'confirmed'].includes(book.status) && (
                           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <button
                               onClick={() => handleReservationAction(book.id, 'cancelled')}
@@ -2380,6 +2390,16 @@ const Dashboard = () => {
                               {cancellingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
                               {cancellingReservationId === book.id ? 'Denying...' : 'Deny'}
                             </button>
+                            {['pending_landlord_confirmation', 'queued', 'awaiting_confirmation'].includes(book.status) && (
+                              <button 
+                                onClick={() => handleReservationAction(book.id, 'confirmed')} 
+                                className="btn-primary !rounded-[1.2rem] !py-2.5 !px-8 text-xs font-bold active:scale-95 shadow-md shadow-primary-600/10 disabled:opacity-70 disabled:cursor-wait inline-flex items-center justify-center gap-1.5"
+                                disabled={acceptingReservationId === book.id}
+                              >
+                                {acceptingReservationId === book.id ? <Loader2 className="animate-spin" size={14} /> : null}
+                                {acceptingReservationId === book.id ? 'Confirming...' : 'Confirm Appointment'}
+                              </button>
+                            )}
                             {book.status === 'confirmed' && (
                               <button 
                                 onClick={() => handleReservationAction(book.id, 'accepted')} 

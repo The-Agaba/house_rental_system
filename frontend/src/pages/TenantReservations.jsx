@@ -25,11 +25,10 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatTzs } from '../utils/currency';
 
-const activeQueueStatuses = ['queued', 'awaiting_confirmation', 'confirmed'];
+const activeQueueStatuses = ['pending_landlord_confirmation', 'confirmed'];
 
 const statusStyles = {
-  queued: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
-  awaiting_confirmation: 'bg-primary-100 text-primary-700 dark:bg-primary-950/30 dark:text-primary-300',
+  pending_landlord_confirmation: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
   confirmed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300',
   accepted: 'bg-emerald-600 text-white',
   cancelled: 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -346,7 +345,7 @@ const TenantReservations = ({ mode = 'queue' }) => {
     setUpdatingId(reservationId);
     try {
       await axios.put(`/reservations/${reservationId}/${action}`);
-      toast.success(action === 'confirm' ? 'Reservation confirmed' : 'Reservation cancelled');
+      toast.success('Reservation cancelled');
       fetchReservations();
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to update reservation');
@@ -377,18 +376,18 @@ const TenantReservations = ({ mode = 'queue' }) => {
               Tenant area
             </p>
             <h1 className="text-3xl md:text-5xl font-black text-slate-950 dark:text-white">
-              {isRentals ? 'My Rented Houses' : 'My Queue Details'}
+              {isRentals ? 'My Rented Houses' : 'My Reservations'}
             </h1>
             <p className="mt-3 max-w-2xl text-sm md:text-base font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
               {isRentals
                 ? 'Review the houses approved for you, where to report, the lease period, and what to carry before moving in.'
-                : 'Track your reservation position, confirmation status, move-in date, duration, and estimated cost.'}
+                : 'Track your active property holds, viewing appointment confirmation, move-in date, duration, and estimated cost.'}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link to="/tenant/queue" className={isRentals ? 'btn-secondary !py-2.5 !px-5 text-xs' : 'btn-primary !py-2.5 !px-5 text-xs'}>
-              <Clock size={15} /> Queue Details
+              <Clock size={15} /> Reservations
             </Link>
             <Link to="/tenant/rentals" className={isRentals ? 'btn-primary !py-2.5 !px-5 text-xs' : 'btn-secondary !py-2.5 !px-5 text-xs'}>
               <Home size={15} /> Rented Houses
@@ -452,7 +451,7 @@ const TenantReservations = ({ mode = 'queue' }) => {
                         </span>
                         {isActiveQueue && (
                           <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                            Queue #{item.queuePosition || '-'}
+                            24-hour hold
                           </span>
                         )}
                       </div>
@@ -506,9 +505,9 @@ const TenantReservations = ({ mode = 'queue' }) => {
                       <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{formatTzs(item.estimatedTotalCost)}</p>
                     </div>
                     <div className="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isRentals ? 'Expected end' : 'Joined queue'}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isRentals ? 'Expected end' : 'Viewing appointment'}</p>
                       <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
-                        {isRentals ? leaseEnd || 'Pending' : new Date(item.createdAt).toLocaleDateString()}
+                        {isRentals ? leaseEnd || 'Pending' : item.appointmentAt ? new Date(item.appointmentAt).toLocaleString() : 'Pending'}
                       </p>
                     </div>
                   </div>
@@ -523,10 +522,10 @@ const TenantReservations = ({ mode = 'queue' }) => {
                       <CheckCircle2 size={18} className="inline-block mr-2 align-text-bottom" />
                       Report to the property on {item.moveInDate || 'your move-in date'}, carry the required contract documents, and use this page to confirm your approved stay period before moving in.
                     </div>
-                  ) : item.status === 'awaiting_confirmation' ? (
+                  ) : item.status === 'pending_landlord_confirmation' ? (
                     <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-primary-100 dark:border-primary-900/40 bg-primary-50/70 dark:bg-primary-950/20 p-4">
                       <p className="text-sm font-semibold text-primary-800 dark:text-primary-300">
-                        Your turn is ready. Confirm this reservation before the deadline so the landlord can accept it.
+                        This property is held for you while the landlord confirms your requested viewing appointment.
                       </p>
                       <div className="flex gap-3">
                         <button
@@ -536,14 +535,6 @@ const TenantReservations = ({ mode = 'queue' }) => {
                         >
                           {updatingId === item.id ? <Loader2 className="animate-spin" size={15} /> : <XCircle size={15} />}
                           {updatingId === item.id ? 'Cancelling...' : 'Cancel'}
-                        </button>
-                        <button
-                          onClick={() => handleReservationAction(item.id, 'confirm')}
-                          className="btn-primary !py-2.5 !px-5 text-xs"
-                          disabled={updatingId === item.id}
-                        >
-                          {updatingId === item.id ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle2 size={15} />}
-                          Confirm
                         </button>
                       </div>
                     </div>
@@ -561,7 +552,7 @@ const TenantReservations = ({ mode = 'queue' }) => {
             <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
               {isRentals
                 ? 'Accepted reservations will appear here with reporting instructions and stay details.'
-                : 'Join a property reservation queue and your status will appear here.'}
+                : 'Reserve a property and your status will appear here.'}
             </p>
             <Link to="/properties" className="btn-primary mt-6 !py-2.5 !px-5 text-xs">
               <CalendarDays size={15} /> Browse Properties

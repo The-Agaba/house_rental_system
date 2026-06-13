@@ -4,6 +4,7 @@ import com.collincorp.houserental.domain.ReservationStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record ReservationResponse(
         long id,
@@ -22,6 +23,9 @@ public record ReservationResponse(
         int durationMonths,
         BigDecimal estimatedTotalCost,
         Instant confirmationDeadline,
+        LocalDateTime appointmentAt,
+        Instant appointmentConfirmedAt,
+        String landlordResponseNotes,
         Instant createdAt,
         Instant confirmedAt,
         Instant updatedAt

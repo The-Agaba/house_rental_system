@@ -310,6 +310,7 @@ public class LandlordOnboardingService {
             landlord.setPhone(request.getRequesterPhone());
             landlord.setRole(UserRole.landlord);
             landlord.setTinNumber(request.getTinNumber());
+            landlord.setLocality(request.getLocality());
             landlord.setActive(true);
             landlord.setEmailVerified(false);
 
@@ -477,6 +478,14 @@ public class LandlordOnboardingService {
 
     @Transactional(readOnly = true)
     public List<LandlordRequestResponse> getRequestsAssignedToMe(Long agentId) {
+        UserEntity agent = userRepository.findById(agentId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "agent_not_found"));
+        if (agent.getRole() == UserRole.agent && agent.getLocality() != null && !agent.getLocality().isBlank()) {
+            return landlordRequestRepository.findVisibleToAgentByLocality(agentId, agent.getLocality())
+                    .stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        }
         return landlordRequestRepository.findByAssignedAgentIdOrderByCreatedAtDesc(agentId)
                 .stream()
                 .map(this::toResponse)

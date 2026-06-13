@@ -31,6 +31,7 @@ import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReservationService {
+
+    private static final int MAX_ACTIVE_TENANT_RESERVATIONS = 3;
 
     private final ReservationRepository reservationRepository;
     private final PropertyRepository propertyRepository;
@@ -64,6 +67,8 @@ public class ReservationService {
 
     @Transactional
     public ReservationResponse createReservation(ReservationCreateRequest req, Long tenantId) {
+        processExpiredReservations();
+
         PropertyEntity property = propertyRepository.findById(req.propertyId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "property_not_found"));
 
@@ -71,12 +76,20 @@ public class ReservationService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "property_not_approved");
         }
 
-        if (property.getAvailability() == PropertyAvailability.unavailable) {
+        if (property.getAvailability() != PropertyAvailability.available) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "property_not_available");
         }
 
         UserEntity tenant = userRepository.findById(tenantId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user_not_found"));
+
+        if (req.appointmentAt().isBefore(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "appointment_must_be_in_future");
+        }
+
+        if (!req.appointmentAt().toLocalDate().isBefore(req.moveInDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "appointment_must_be_before_move_in");
+        }
 
         // 1. Calendar Validation: check moveInDate is after computed earliest date
         LocalDate earliestMoveIn = getEarliestMoveInDate(property.getId());
@@ -88,77 +101,62 @@ public class ReservationService {
         List<ReservationEntity> existing = reservationRepository.findByTenantIdOrderByCreatedAtDesc(tenantId);
         boolean hasActive = existing.stream()
                 .filter(r -> r.getProperty().getId().equals(property.getId()))
-                .anyMatch(r -> r.getStatus() == ReservationStatus.queued || 
-                               r.getStatus() == ReservationStatus.awaiting_confirmation || 
-                               r.getStatus() == ReservationStatus.confirmed);
+                .anyMatch(r -> activeHoldStatuses().contains(r.getStatus()));
         if (hasActive) {
             throw new ApiException(HttpStatus.CONFLICT, "already_reserving_property");
+        }
+
+        long activeTenantReservations = reservationRepository.countByTenantIdAndStatusIn(tenantId, activeHoldStatuses());
+        if (activeTenantReservations >= MAX_ACTIVE_TENANT_RESERVATIONS) {
+            throw new ApiException(HttpStatus.CONFLICT, "tenant_active_reservation_limit_reached");
+        }
+
+        if (!reservationRepository.findActivePropertyHolds(property.getId(), activeHoldStatuses(), Instant.now()).isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT, "property_already_reserved");
         }
 
         // 3. Estimate cost
         BigDecimal cost = property.getPricePerMonth().multiply(BigDecimal.valueOf(req.durationMonths()));
 
-        // 4. Calculate queue position
-        int maxPosition = reservationRepository.findByPropertyIdOrderByQueuePositionAsc(property.getId())
-                .stream()
-                .filter(r -> r.getStatus() == ReservationStatus.queued || 
-                             r.getStatus() == ReservationStatus.awaiting_confirmation || 
-                             r.getStatus() == ReservationStatus.confirmed)
-                .mapToInt(ReservationEntity::getQueuePosition)
-                .max()
-                .orElse(0);
-        int queuePosition = maxPosition + 1;
-
         ReservationEntity reservation = new ReservationEntity();
         reservation.setProperty(property);
         reservation.setTenant(tenant);
-        reservation.setQueuePosition(queuePosition);
+        reservation.setQueuePosition(0);
         reservation.setMoveInDate(req.moveInDate());
+        reservation.setAppointmentAt(req.appointmentAt());
         reservation.setDurationMonths(req.durationMonths());
         reservation.setEstimatedTotalCost(cost);
-
-        if (queuePosition == 1) {
-            reservation.setStatus(ReservationStatus.awaiting_confirmation);
-            reservation.setConfirmationDeadline(Instant.now().plus(Duration.ofHours(24)));
-        } else {
-            reservation.setStatus(ReservationStatus.queued);
-        }
+        reservation.setStatus(ReservationStatus.pending_landlord_confirmation);
+        reservation.setConfirmationDeadline(Instant.now().plus(Duration.ofHours(24)));
 
         reservationRepository.save(reservation);
-        logService.log(LogAction.RESERVATION_CREATED, "reservation", reservation.getId(), tenant.getId(), tenant.getEmail(), "Reservation created in queue at position: " + queuePosition);
+        
+        property.setAvailability(PropertyAvailability.reserved);
+        propertyRepository.save(property);
 
-        // 5. Send notifications
-        if (queuePosition == 1) {
-            notificationService.sendNotification(
-                    tenant.getId(),
-                    NotificationType.CONFIRMATION_DEADLINE,
-                    "Confirm Your Reservation!",
-                    "It's your turn for property '" + property.getTitle() + "'! You have 24 hours to confirm your reservation.",
-                    reservation.getId()
-            );
-        } else {
-            notificationService.sendNotification(
-                    tenant.getId(),
-                    NotificationType.QUEUE_POSITION,
-                    "Reservation Joined Queue",
-                    "You have successfully joined the reservation queue for '" + property.getTitle() + "' at position " + queuePosition + ".",
-                    reservation.getId()
-            );
-        }
+        logService.log(LogAction.RESERVATION_CREATED, "reservation", reservation.getId(), tenant.getId(), tenant.getEmail(), "Property reserved on a 24-hour hold pending landlord appointment confirmation");
+
+        notifyReservationCreated(reservation);
 
         return toResponse(reservation);
     }
 
     @Transactional
     public ReservationResponse confirmReservation(Long reservationId, Long tenantId) {
+        return landlordConfirmAppointment(reservationId, tenantId, null);
+    }
+
+    @Transactional
+    public ReservationResponse landlordConfirmAppointment(Long reservationId, Long landlordId, String notes) {
         ReservationEntity reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "reservation_not_found"));
 
-        if (!reservation.getTenant().getId().equals(tenantId)) {
+        if (!reservation.getProperty().getLandlord().getId().equals(landlordId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "unauthorized");
         }
 
-        if (reservation.getStatus() != ReservationStatus.awaiting_confirmation) {
+        if (reservation.getStatus() != ReservationStatus.pending_landlord_confirmation
+                && reservation.getStatus() != ReservationStatus.awaiting_confirmation) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "cannot_confirm_in_current_status");
         }
 
@@ -168,16 +166,18 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.confirmed);
         reservation.setConfirmedAt(Instant.now());
+        reservation.setAppointmentConfirmedAt(Instant.now());
+        reservation.setLandlordResponseNotes(notes);
         reservationRepository.save(reservation);
 
-        logService.log(LogAction.RESERVATION_CONFIRMED, "reservation", reservation.getId(), tenantId, reservation.getTenant().getEmail(), "Tenant confirmed reservation");
+        logService.log(LogAction.RESERVATION_CONFIRMED, "reservation", reservation.getId(), landlordId, reservation.getTenant().getEmail(), "Landlord confirmed requested viewing appointment");
 
-        // Notify landlord
         notificationService.sendNotification(
-                reservation.getProperty().getLandlord().getId(),
+                reservation.getTenant().getId(),
                 NotificationType.PROMOTION,
-                "Reservation Confirmed by Tenant",
-                "A tenant has confirmed their reservation for your property '" + reservation.getProperty().getTitle() + "'. Please review and accept it.",
+                "Viewing Appointment Confirmed",
+                "The landlord confirmed your viewing appointment for '" + reservation.getProperty().getTitle() + "' on " + formatAppointment(reservation.getAppointmentAt()) + ".",
+                buildReservationEmailHtml("Viewing Appointment Confirmed", "Your requested viewing appointment has been confirmed.", reservation),
                 reservation.getId()
         );
 
@@ -210,18 +210,20 @@ public class ReservationService {
         logService.log(LogAction.RESERVATION_ACCEPTED, "reservation", reservation.getId(), landlordId, reservation.getProperty().getLandlord().getEmail(), "Landlord accepted reservation");
 
         // Notify accepted tenant
+        String tenantMessage = "Congratulations! Your reservation for '" + property.getTitle() + "' has been accepted by the landlord.";
         notificationService.sendNotification(
                 reservation.getTenant().getId(),
                 NotificationType.RESERVATION_ACCEPTED,
                 "Reservation Accepted!",
-                "Congratulations! Your reservation for '" + property.getTitle() + "' has been accepted by the landlord.",
+                tenantMessage,
+                buildReservationEmailHtml("Reservation Accepted!", tenantMessage, reservation),
                 reservation.getId()
         );
 
         // 3. Cancel all other active reservations for this property
         List<ReservationEntity> others = reservationRepository.findByPropertyIdAndStatusInOrderByQueuePositionAsc(
                 property.getId(),
-                Arrays.asList(ReservationStatus.queued, ReservationStatus.awaiting_confirmation, ReservationStatus.confirmed)
+                activeHoldStatuses()
         );
 
         for (ReservationEntity other : others) {
@@ -232,11 +234,13 @@ public class ReservationService {
 
                 logService.log(LogAction.RESERVATION_CANCELLED, "reservation", other.getId(), landlordId, other.getTenant().getEmail(), "System cancelled reservation due to rental");
 
+                String cancelMsg = "The property '" + property.getTitle() + "' has been rented to another tenant. Your reservation has been cancelled.";
                 notificationService.sendNotification(
                         other.getTenant().getId(),
                         NotificationType.RESERVATION_CANCELLED,
                         "Reservation Cancelled",
-                        "The property '" + property.getTitle() + "' has been rented to another tenant. Your reservation has been cancelled.",
+                        cancelMsg,
+                        buildReservationEmailHtml("Reservation Cancelled", cancelMsg, other),
                         other.getId()
                 );
             }
@@ -248,8 +252,8 @@ public class ReservationService {
     @Transactional
     public void processExpiredReservations() {
         Instant now = Instant.now();
-        List<ReservationEntity> expired = reservationRepository.findByStatusAndConfirmationDeadlineBefore(
-                ReservationStatus.awaiting_confirmation,
+        List<ReservationEntity> expired = reservationRepository.findByStatusInAndConfirmationDeadlineBefore(
+                activeHoldStatuses(),
                 now
         );
 
@@ -264,12 +268,19 @@ public class ReservationService {
                     res.getTenant().getId(),
                     NotificationType.CONFIRMATION_DEADLINE,
                     "Reservation Expired",
-                    "Your 24-hour confirmation window for '" + res.getProperty().getTitle() + "' has expired.",
+                    "Your 24-hour reservation hold for '" + res.getProperty().getTitle() + "' has expired.",
+                    buildReservationEmailHtml("Reservation Hold Expired", "Your reservation hold has expired and the property can now be reserved by another tenant.", res),
                     res.getId()
             );
 
-            // Promote next in queue
-            promoteNextInQueue(res.getProperty().getId());
+            notificationService.sendNotification(
+                    res.getProperty().getLandlord().getId(),
+                    NotificationType.RESERVATION_CANCELLED,
+                    "Reservation Hold Expired",
+                    "The 24-hour hold for '" + res.getProperty().getTitle() + "' has expired because the viewing appointment was not confirmed in time.",
+                    buildReservationEmailHtml("Reservation Hold Expired", "The viewing appointment was not confirmed before the hold expired.", res),
+                    res.getId()
+            );
         }
     }
 
@@ -302,7 +313,8 @@ public class ReservationService {
                     reservation.getProperty().getLandlord().getId(),
                     NotificationType.RESERVATION_CANCELLED,
                     "Reservation Cancelled by Tenant",
-                    "The reservation queue entry for '" + reservation.getProperty().getTitle() + "' was cancelled by the tenant.",
+                    "The reservation hold for '" + reservation.getProperty().getTitle() + "' was cancelled by the tenant. The property is available for reservation again.",
+                    buildReservationEmailHtml("Reservation Cancelled by Tenant", "The tenant cancelled this reservation hold.", reservation),
                     reservation.getId()
             );
         } else {
@@ -310,40 +322,15 @@ public class ReservationService {
                     reservation.getTenant().getId(),
                     NotificationType.RESERVATION_CANCELLED,
                     "Reservation Cancelled by Landlord",
-                    "Your reservation for '" + reservation.getProperty().getTitle() + "' was cancelled by the landlord.",
+                    "Your reservation for '" + reservation.getProperty().getTitle() + "' was cancelled by the landlord. The property hold has been released.",
+                    buildReservationEmailHtml("Reservation Cancelled by Landlord", "The landlord cancelled this reservation hold.", reservation),
                     reservation.getId()
             );
-        }
-
-        // If it was the first in line, promote the next one
-        if (oldStatus == ReservationStatus.awaiting_confirmation || oldStatus == ReservationStatus.confirmed) {
-            promoteNextInQueue(reservation.getProperty().getId());
         }
     }
 
     private void promoteNextInQueue(Long propertyId) {
-        // Find first queued reservation
-        Optional<ReservationEntity> nextOpt = reservationRepository.findFirstByPropertyIdAndStatusOrderByQueuePositionAsc(
-                propertyId,
-                ReservationStatus.queued
-        );
-
-        if (nextOpt.isPresent()) {
-            ReservationEntity next = nextOpt.get();
-            next.setStatus(ReservationStatus.awaiting_confirmation);
-            next.setConfirmationDeadline(Instant.now().plus(Duration.ofHours(24)));
-            reservationRepository.save(next);
-
-            logService.log(LogAction.RESERVATION_CONFIRMED, "reservation", next.getId(), null, next.getTenant().getEmail(), "Promoted next tenant in queue");
-
-            notificationService.sendNotification(
-                    next.getTenant().getId(),
-                    NotificationType.PROMOTION,
-                    "It's Your Turn! Confirm Your Reservation",
-                    "You have been promoted to the front of the queue for '" + next.getProperty().getTitle() + "'! You have 24 hours to confirm your reservation.",
-                    next.getId()
-            );
-        }
+        // Queue promotion has been retired. A cancelled or expired hold simply releases the property.
     }
 
     @Transactional(readOnly = true)
@@ -353,7 +340,7 @@ public class ReservationService {
 
         List<ReservationEntity> active = reservationRepository.findByPropertyIdAndStatusInOrderByQueuePositionAsc(
                 propertyId,
-                Arrays.asList(ReservationStatus.queued, ReservationStatus.awaiting_confirmation, ReservationStatus.confirmed)
+                activeHoldStatuses()
         );
 
         LocalDate earliest = LocalDate.now().plusDays(1);
@@ -366,10 +353,12 @@ public class ReservationService {
         }
 
         for (ReservationEntity r : active) {
-            if (r.getMoveInDate().isAfter(earliest) || r.getMoveInDate().isEqual(earliest)) {
-                earliest = r.getMoveInDate().plusMonths(r.getDurationMonths());
-            } else {
-                earliest = earliest.plusMonths(r.getDurationMonths());
+            if (r.getStatus() == ReservationStatus.accepted) {
+                if (r.getMoveInDate().isAfter(earliest) || r.getMoveInDate().isEqual(earliest)) {
+                    earliest = r.getMoveInDate().plusMonths(r.getDurationMonths());
+                } else {
+                    earliest = earliest.plusMonths(r.getDurationMonths());
+                }
             }
         }
         return earliest;
@@ -389,12 +378,23 @@ public class ReservationService {
         PropertyEntity property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "property_not_found"));
 
-        List<ReservationResponse> active = reservationRepository.findByPropertyIdAndStatusInOrderByQueuePositionAsc(
+        List<ReservationEntity> active = reservationRepository.findActivePropertyHolds(
                 propertyId,
-                Arrays.asList(ReservationStatus.queued, ReservationStatus.awaiting_confirmation, ReservationStatus.confirmed)
-        ).stream().map(this::toResponse).collect(Collectors.toList());
+                activeHoldStatuses(),
+                Instant.now()
+        );
 
-        return new QueueStatusResponse(propertyId, property.getTitle(), active.size(), active);
+        ReservationEntity current = active.isEmpty() ? null : active.get(0);
+        return new QueueStatusResponse(
+                propertyId,
+                property.getTitle(),
+                active.size(),
+                List.of(),
+                current != null,
+                current != null ? current.getStatus() : null,
+                current != null ? current.getConfirmationDeadline() : null,
+                current != null && current.getAppointmentConfirmedAt() != null
+        );
     }
 
     @Transactional(readOnly = true)
@@ -512,6 +512,85 @@ public class ReservationService {
         return format.format(amount == null ? BigDecimal.ZERO : amount).replace("$", "TZS ");
     }
 
+    private List<ReservationStatus> activeHoldStatuses() {
+        return Arrays.asList(
+                ReservationStatus.pending_landlord_confirmation,
+                ReservationStatus.confirmed,
+                ReservationStatus.awaiting_confirmation
+        );
+    }
+
+    private void notifyReservationCreated(ReservationEntity reservation) {
+        PropertyEntity property = reservation.getProperty();
+        UserEntity tenant = reservation.getTenant();
+        UserEntity landlord = property.getLandlord();
+
+        String landlordMessage = "A tenant requested to view '" + property.getTitle() + "' on "
+                + formatAppointment(reservation.getAppointmentAt())
+                + ". The property is held for this tenant for 24 hours. Confirm the appointment in your dashboard if you can attend.";
+        notificationService.sendNotification(
+                landlord.getId(),
+                NotificationType.PROMOTION,
+                "New Viewing Appointment Request",
+                landlordMessage,
+                buildReservationEmailHtml("New Viewing Appointment Request", landlordMessage, reservation),
+                reservation.getId()
+        );
+
+        String tenantMessage = "Your reservation hold for '" + property.getTitle() + "' is active for 24 hours while the landlord confirms your viewing appointment on "
+                + formatAppointment(reservation.getAppointmentAt()) + ".";
+        notificationService.sendNotification(
+                tenant.getId(),
+                NotificationType.CONFIRMATION_DEADLINE,
+                "Property Reserved for 24 Hours",
+                tenantMessage,
+                buildReservationEmailHtml("Property Reserved for 24 Hours", tenantMessage, reservation),
+                reservation.getId()
+        );
+    }
+
+    private String formatAppointment(LocalDateTime appointmentAt) {
+        return appointmentAt == null ? "the requested time" : appointmentAt.toString().replace('T', ' ');
+    }
+
+    private String buildReservationEmailHtml(String heading, String intro, ReservationEntity reservation) {
+        PropertyEntity property = reservation.getProperty();
+        return """
+                <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
+                  <h2 style="margin:0 0 12px;color:#2563eb">%s</h2>
+                  <p style="margin:0 0 16px">%s</p>
+                  <table style="border-collapse:collapse;width:100%%;max-width:620px">
+                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">Property</td><td style="padding:8px;border:1px solid #e2e8f0">%s</td></tr>
+                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">Location</td><td style="padding:8px;border:1px solid #e2e8f0">%s</td></tr>
+                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">Viewing appointment</td><td style="padding:8px;border:1px solid #e2e8f0">%s</td></tr>
+                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">Move-in date</td><td style="padding:8px;border:1px solid #e2e8f0">%s</td></tr>
+                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">Hold expires</td><td style="padding:8px;border:1px solid #e2e8f0">%s</td></tr>
+                  </table>
+                  <p style="margin-top:16px;color:#475569">Open your RentHub dashboard for the next action. Tenant personal details are only shown to authorized users inside the system.</p>
+                </div>
+                """.formatted(
+                escapeHtml(heading),
+                escapeHtml(intro),
+                escapeHtml(property.getTitle()),
+                escapeHtml(property.getLocation()),
+                escapeHtml(formatAppointment(reservation.getAppointmentAt())),
+                reservation.getMoveInDate(),
+                reservation.getConfirmationDeadline()
+        );
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
     public ReservationResponse toResponse(ReservationEntity entity) {
         PropertyEntity property = entity.getProperty();
         UserEntity landlord = property.getLandlord();
@@ -532,6 +611,9 @@ public class ReservationService {
                 entity.getDurationMonths(),
                 entity.getEstimatedTotalCost(),
                 entity.getConfirmationDeadline(),
+                entity.getAppointmentAt(),
+                entity.getAppointmentConfirmedAt(),
+                entity.getLandlordResponseNotes(),
                 entity.getCreatedAt(),
                 entity.getConfirmedAt(),
                 entity.getUpdatedAt()
